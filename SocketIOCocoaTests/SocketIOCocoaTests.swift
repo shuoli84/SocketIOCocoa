@@ -8,6 +8,7 @@
 
 import Cocoa
 import XCTest
+import SocketIOCocoa
 
 class SocketIOCocoaTests: XCTestCase {
     
@@ -21,15 +22,68 @@ class SocketIOCocoaTests: XCTestCase {
         super.tearDown()
     }
     
-    func testExample() {
-        // This is an example of a functional test case.
-        XCTAssert(true, "Pass")
+    func testPacket() {
+        var packet = EnginePacket(data: nil, type: .Open)
+        XCTAssert(packet.encode().length == 1, "The length should be 1")
+        
+        var testString = "what the hell"
+        packet = EnginePacket(string: testString, type: .Open)
+        let encoded = packet.encode()
+        XCTAssert(encoded.length == 14, "Mismatch length")
+        
+        let decodedPacket = EnginePacket(decodeFromData: encoded)
+        XCTAssert(decodedPacket.type == PacketType.Open, "Mismatch type")
     }
     
     func testPerformanceExample() {
         // This is an example of a performance test case.
         self.measureBlock() {
-            // Put the code you want to measure the time of here.
+            let longstring = "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            "This is a very long string"
+            
+            for i in 0...1000 {
+                let packet = EnginePacket(string: "long string", type:.Open)
+                let encoded = packet.encode()
+                let decoded = EnginePacket(decodeFromData: encoded)
+            }
         }
     }
     
