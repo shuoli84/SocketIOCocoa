@@ -1,0 +1,412 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9C299CD61A048AF70002F47E /* SocketIOCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C299CD51A048AF70002F47E /* SocketIOCocoa.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		9C299CDC1A048AF70002F47E /* SocketIOCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */; };
+		9C299CE31A048AF70002F47E /* SocketIOCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9C299CDD1A048AF70002F47E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9C299CC71A048AF70002F47E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9C299CCF1A048AF70002F47E;
+			remoteInfo = SocketIOCocoa;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SocketIOCocoa.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C299CD41A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9C299CD51A048AF70002F47E /* SocketIOCocoa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SocketIOCocoa.h; sourceTree = "<group>"; };
+		9C299CDB1A048AF70002F47E /* SocketIOCocoaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SocketIOCocoaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C299CE11A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketIOCocoaTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9C299CCC1A048AF70002F47E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C299CD81A048AF70002F47E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C299CDC1A048AF70002F47E /* SocketIOCocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9C299CC61A048AF70002F47E = {
+			isa = PBXGroup;
+			children = (
+				9C299CD21A048AF70002F47E /* SocketIOCocoa */,
+				9C299CDF1A048AF70002F47E /* SocketIOCocoaTests */,
+				9C299CD11A048AF70002F47E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9C299CD11A048AF70002F47E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */,
+				9C299CDB1A048AF70002F47E /* SocketIOCocoaTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9C299CD21A048AF70002F47E /* SocketIOCocoa */ = {
+			isa = PBXGroup;
+			children = (
+				9C299CD51A048AF70002F47E /* SocketIOCocoa.h */,
+				9C299CD31A048AF70002F47E /* Supporting Files */,
+			);
+			path = SocketIOCocoa;
+			sourceTree = "<group>";
+		};
+		9C299CD31A048AF70002F47E /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				9C299CD41A048AF70002F47E /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		9C299CDF1A048AF70002F47E /* SocketIOCocoaTests */ = {
+			isa = PBXGroup;
+			children = (
+				9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */,
+				9C299CE01A048AF70002F47E /* Supporting Files */,
+			);
+			path = SocketIOCocoaTests;
+			sourceTree = "<group>";
+		};
+		9C299CE01A048AF70002F47E /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				9C299CE11A048AF70002F47E /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		9C299CCD1A048AF70002F47E /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C299CD61A048AF70002F47E /* SocketIOCocoa.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		9C299CCF1A048AF70002F47E /* SocketIOCocoa */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9C299CE61A048AF70002F47E /* Build configuration list for PBXNativeTarget "SocketIOCocoa" */;
+			buildPhases = (
+				9C299CCB1A048AF70002F47E /* Sources */,
+				9C299CCC1A048AF70002F47E /* Frameworks */,
+				9C299CCD1A048AF70002F47E /* Headers */,
+				9C299CCE1A048AF70002F47E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SocketIOCocoa;
+			productName = SocketIOCocoa;
+			productReference = 9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		9C299CDA1A048AF70002F47E /* SocketIOCocoaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9C299CE91A048AF70002F47E /* Build configuration list for PBXNativeTarget "SocketIOCocoaTests" */;
+			buildPhases = (
+				9C299CD71A048AF70002F47E /* Sources */,
+				9C299CD81A048AF70002F47E /* Frameworks */,
+				9C299CD91A048AF70002F47E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9C299CDE1A048AF70002F47E /* PBXTargetDependency */,
+			);
+			name = SocketIOCocoaTests;
+			productName = SocketIOCocoaTests;
+			productReference = 9C299CDB1A048AF70002F47E /* SocketIOCocoaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9C299CC71A048AF70002F47E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0610;
+				ORGANIZATIONNAME = LiShuo;
+				TargetAttributes = {
+					9C299CCF1A048AF70002F47E = {
+						CreatedOnToolsVersion = 6.1;
+					};
+					9C299CDA1A048AF70002F47E = {
+						CreatedOnToolsVersion = 6.1;
+					};
+				};
+			};
+			buildConfigurationList = 9C299CCA1A048AF70002F47E /* Build configuration list for PBXProject "SocketIOCocoa" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 9C299CC61A048AF70002F47E;
+			productRefGroup = 9C299CD11A048AF70002F47E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9C299CCF1A048AF70002F47E /* SocketIOCocoa */,
+				9C299CDA1A048AF70002F47E /* SocketIOCocoaTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9C299CCE1A048AF70002F47E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C299CD91A048AF70002F47E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9C299CCB1A048AF70002F47E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C299CD71A048AF70002F47E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9C299CE31A048AF70002F47E /* SocketIOCocoaTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9C299CDE1A048AF70002F47E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9C299CCF1A048AF70002F47E /* SocketIOCocoa */;
+			targetProxy = 9C299CDD1A048AF70002F47E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		9C299CE41A048AF70002F47E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		9C299CE51A048AF70002F47E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		9C299CE71A048AF70002F47E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = SocketIOCocoa/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		9C299CE81A048AF70002F47E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = SocketIOCocoa/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		9C299CEA1A048AF70002F47E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = SocketIOCocoaTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		9C299CEB1A048AF70002F47E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = SocketIOCocoaTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9C299CCA1A048AF70002F47E /* Build configuration list for PBXProject "SocketIOCocoa" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9C299CE41A048AF70002F47E /* Debug */,
+				9C299CE51A048AF70002F47E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9C299CE61A048AF70002F47E /* Build configuration list for PBXNativeTarget "SocketIOCocoa" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9C299CE71A048AF70002F47E /* Debug */,
+				9C299CE81A048AF70002F47E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		9C299CE91A048AF70002F47E /* Build configuration list for PBXNativeTarget "SocketIOCocoaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9C299CEA1A048AF70002F47E /* Debug */,
+				9C299CEB1A048AF70002F47E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 9C299CC71A048AF70002F47E /* Project object */;
+}
