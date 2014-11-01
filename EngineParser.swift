@@ -63,7 +63,53 @@ public struct EnginePacket {
 let error_packet = EnginePacket(data: nil, type: .Error)
 
 public class EngineParser {
-    public func encodePacket(packet : EnginePacket) -> NSData?{
-        return packet.encode()
+    public class func encodePayload (packets: [EnginePacket]) -> NSData {
+        var output = NSMutableData()
+        for packet in packets{
+            let encoded = packet.encode()
+            var lengthBuf = [Byte]([1]) // 0 for string, 1 for binary, we only use 1 as we only support binary now
+            let bufLengthStr = String(encoded.length)
+            lengthBuf += Converter.nsstringToByteArray(bufLengthStr)
+            lengthBuf.append(255)
+            output.appendBytes(lengthBuf, length: lengthBuf.count)
+            output.appendData(encoded)
+        }
+        return output
+    }
+    
+    public class func decodePayload(data : NSData) -> [EnginePacket] {
+        let byteArray = Converter.nsdataToByteArray(data)
+        var packets : [EnginePacket] = []
+        var offset = 0
+        
+        while offset < byteArray.count {
+            var lengthBuf = [Byte]()
+            let isBinary = byteArray[offset++] == 1
+            
+            for index in 0..<byteArray.count - offset{
+                let byte = byteArray[offset+index]
+                if byte != 255{
+                    lengthBuf.append(byte)
+                }
+                else{
+                    break
+                }
+            }
+            
+            offset += lengthBuf.count + 1 // extra 1 for 255
+            
+            var packetLength = 0
+            for c in lengthBuf {
+                packetLength = packetLength * 10 + (c - 48)
+            }
+            
+            let encodedPacket = Converter.bytearrayToNSData([Byte](byteArray[offset..<offset+packetLength]))
+            
+            packets.append(EnginePacket(decodeFromData: encodedPacket))
+            
+            offset += packetLength
+        }
+        
+        return packets
     }
 }

@@ -35,6 +35,22 @@ class SocketIOCocoaTests: XCTestCase {
         XCTAssert(decodedPacket.type == PacketType.Open, "Mismatch type")
     }
     
+    func testPayload(){
+        let packets = [
+            EnginePacket(string: "The first packet", type: .Open),
+            EnginePacket(string: "The second packet", type: .Open),
+            EnginePacket(string: "The third packet", type: .Open),
+        ]
+        
+        var d = EngineParser.encodePayload(packets)
+        Converter.nsdataToByteArray(d)
+        var decoded_packets = EngineParser.decodePayload(d)
+        
+        XCTAssert(Converter.nsdataToNSString(decoded_packets[0].data!) == "The first packet", "not matching")
+        XCTAssert(Converter.nsdataToNSString(decoded_packets[1].data!) == "The second packet")
+        XCTAssert(Converter.nsdataToNSString(decoded_packets[2].data!) == "The third packet")
+    }
+    
     func testPerformanceExample() {
         // This is an example of a performance test case.
         self.measureBlock() {
