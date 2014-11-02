@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		0B36FA742329C8932E67C35F /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F11A8F6233D21997C33D7D49 /* libPods.a */; };
-		9C0F1A361A052BC40055A2EF /* Convertions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0F1A351A052BC40055A2EF /* Convertions.swift */; };
 		9C299CD61A048AF70002F47E /* SocketIOCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C299CD51A048AF70002F47E /* SocketIOCocoa.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9C299CDC1A048AF70002F47E /* SocketIOCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */; };
 		9C299CE31A048AF70002F47E /* SocketIOCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */; };
-		9C299CED1A048FA20002F47E /* EngineParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CEC1A048FA20002F47E /* EngineParser.swift */; };
+		9C299CED1A048FA20002F47E /* SocketIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CEC1A048FA20002F47E /* SocketIO.swift */; };
+		9CF1BD0E1A05E2A600C7E97F /* alamofire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF1BD0D1A05E2A600C7E97F /* alamofire.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,14 +26,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9C0F1A351A052BC40055A2EF /* Convertions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Convertions.swift; sourceTree = "<group>"; };
 		9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SocketIOCocoa.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C299CD41A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9C299CD51A048AF70002F47E /* SocketIOCocoa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SocketIOCocoa.h; sourceTree = "<group>"; };
 		9C299CDB1A048AF70002F47E /* SocketIOCocoaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SocketIOCocoaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C299CE11A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketIOCocoaTests.swift; sourceTree = "<group>"; };
-		9C299CEC1A048FA20002F47E /* EngineParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EngineParser.swift; path = ../EngineParser.swift; sourceTree = "<group>"; };
+		9C299CEC1A048FA20002F47E /* SocketIO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SocketIO.swift; path = ../SocketIO.swift; sourceTree = "<group>"; };
+		9CF1BD0D1A05E2A600C7E97F /* alamofire.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = alamofire.swift; sourceTree = "<group>"; };
 		C683D0750A5BED5403E25D41 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		CD168E7B21F68EBF458D587D /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		F11A8F6233D21997C33D7D49 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -71,6 +71,7 @@
 		9C299CC61A048AF70002F47E = {
 			isa = PBXGroup;
 			children = (
+				9CF1BD0C1A05E29600C7E97F /* Vender */,
 				9C299CD21A048AF70002F47E /* SocketIOCocoa */,
 				9C299CDF1A048AF70002F47E /* SocketIOCocoaTests */,
 				9C299CD11A048AF70002F47E /* Products */,
@@ -91,10 +92,9 @@
 		9C299CD21A048AF70002F47E /* SocketIOCocoa */ = {
 			isa = PBXGroup;
 			children = (
-				9C299CEC1A048FA20002F47E /* EngineParser.swift */,
+				9C299CEC1A048FA20002F47E /* SocketIO.swift */,
 				9C299CD51A048AF70002F47E /* SocketIOCocoa.h */,
 				9C299CD31A048AF70002F47E /* Supporting Files */,
-				9C0F1A351A052BC40055A2EF /* Convertions.swift */,
 			);
 			path = SocketIOCocoa;
 			sourceTree = "<group>";
@@ -122,6 +122,14 @@
 				9C299CE11A048AF70002F47E /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		9CF1BD0C1A05E29600C7E97F /* Vender */ = {
+			isa = PBXGroup;
+			children = (
+				9CF1BD0D1A05E2A600C7E97F /* alamofire.swift */,
+			);
+			name = Vender;
 			sourceTree = "<group>";
 		};
 		F462642B8C3AFCDAD4AEEAC7 /* Frameworks */ = {
@@ -274,8 +282,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C0F1A361A052BC40055A2EF /* Convertions.swift in Sources */,
-				9C299CED1A048FA20002F47E /* EngineParser.swift in Sources */,
+				9C299CED1A048FA20002F47E /* SocketIO.swift in Sources */,
+				9CF1BD0E1A05E2A600C7E97F /* alamofire.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -51,6 +51,14 @@ class SocketIOCocoaTests: XCTestCase {
         XCTAssert(Converter.nsdataToNSString(decoded_packets[2].data!) == "The third packet")
     }
     
+    func testPerformancePayload() {
+        self.measureBlock(){
+            for _ in 0...1000 {
+                self.testPayload()
+            }
+        }
+    }
+    
     func testPerformanceExample() {
         // This is an example of a performance test case.
         self.measureBlock() {
@@ -102,5 +110,23 @@ class SocketIOCocoaTests: XCTestCase {
             }
         }
     }
+
+    func testBaseTransport() {
+        let transport = BaseTransport(
+            host: "localhost", path: "/socket.io/", port: "8001", secure: false)
+        XCTAssertNotNil(transport, "Should no nil")
+    }
     
+    func testAlamofire() {
+        var expectation = self.expectationWithDescription("asynchronous request")
+
+        request(.GET, "http://www.baidu.com/").response { (request, response, data, error) in
+            expectation.fulfill()
+            dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                println(response)
+            })
+        }
+        
+        self.waitForExpectationsWithTimeout(10.0, handler: nil)
+    }
 }
