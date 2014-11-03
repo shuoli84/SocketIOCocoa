@@ -150,36 +150,38 @@ class SocketIOCocoaTests: XCTestCase {
         var expectation = self.expectationWithDescription("async request")
         let transport = PollingTransport(
             host: "localhost", path: "/socket.io/", port: "8001", secure: false)
-        // var packet : EnginePacket?
+        
+        var packet : EnginePacket?
         transport.onPacket { (p: EnginePacket) -> Void in
-            println(p)
+            packet = p
+            XCTAssert(p.type == .Open)
             expectation.fulfill()
         }
         transport.open()
         self.waitForExpectationsWithTimeout(30, handler: nil)
+        println(packet)
         
-        // XCTAssert(packet != nil)
-        // XCTAssert(packet?.type == .Open)
-    }
-    
-    
-    func testAlamofire() {
-        var expectation = self.expectationWithDescription("asynchronous request")
-
-        request(.GET, "http://www.baidu.com/").response { (request, response, data, error) in
-            expectation.fulfill()
-            dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                println(response)
-            })
-        }
-        
-        self.waitForExpectationsWithTimeout(10.0, handler: nil)
+        expectation = self.expectationWithDescription("send data")
+        transport.write([
+            EnginePacket(string: "Hello world", type: .Message),
+            EnginePacket(nsdata: Converter.nsstringToNSData("Hello world"), type: .Message),
+            ])
+        self.waitForExpectationsWithTimeout(5, handler:nil)
     }
     
     func testEngineSocket(){
+        var expectation = self.expectationWithDescription("async request")
         var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
         XCTAssertNotNil(socket)
         
+        socket.messageBlock = {
+            (bytes: [Byte], isBinary: Bool) -> Void in
+            println(bytes)
+            expectation.fulfill()
+        }
+        
         socket.open()
+        
+        self.waitForExpectationsWithTimeout(30, handler: nil)
     }
 }

@@ -95,23 +95,16 @@ Engine parser used to encode and decode packet for engineio level. Since we are 
 can support binary, this parser only implemented the binary part. No base64 support.
 */
 
-enum ASCII: Byte, DebugPrintable, Printable{
+// Ascii value enums
+enum ASCII: Byte {
     case _0 = 48, _1, _2, _3, _4, _5, _6, _7, _8, _9
     case a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
-    
-    var description: String {
-        return "\(self.rawValue)"
-    }
-    
-    var debugDescription: String {
-        return self.description
-    }
 }
 
+// The packet type for engine, the lower level of socketio
 public enum PacketType: Byte {
-    case Open, Close, Ping, Pong, Message, Upgrade, Noop
-    case Error = 20, Max
+    case Open, Close, Ping, Pong, Message, Upgrade, Noop, Error = 20, Max
     
     var description: String {
         switch self{
@@ -128,6 +121,7 @@ public enum PacketType: Byte {
     }
 }
 
+// The packet on engine layer
 public struct EnginePacket : Printable, DebugPrintable{
     public var type: PacketType
     public var data: [Byte]?
@@ -135,10 +129,16 @@ public struct EnginePacket : Printable, DebugPrintable{
     
     public var description: String{
         if let data = self.data {
-            return "[\(type.description)][\(isBinary)]: \(data)"
+            if self.isBinary{
+                return "[\(type.description)][Binary: \(isBinary)]: \(data)"
+            }
+            else{
+                let string = Converter.bytearrayToNSString(data)
+                return "[\(type.description)][Binary: \(isBinary)]: \(string)"
+            }
         }
         else {
-            return "[\(type.description)][\(isBinary)]: \(self.data)"
+            return "[\(type.description)][Binary: \(isBinary)]: \(self.data)"
         }
     }
     
@@ -305,18 +305,30 @@ public class EngineParser {
         
         return packets
     }
-    
-    class func decodePayloadAsString(string: String) -> [EnginePacket] {
-        return []
-    }
 }
 
 // Mark Engine Transport
 
-public enum TransportReadyState{
+public enum TransportReadyState: Printable, DebugPrintable{
     case Init, Open, Opening, Closing, Closed
+    
+    public var description: String {
+        switch self{
+        case Init: return "Init"
+        case Open: return "Open"
+        case Opening: return "Opening"
+        case Closing: return "Closing"
+        case Closed: return "Closed"
+        }
+    }
+    
+    public var debugDescription: String {
+        return self.description
+    }
 }
 
+
+// Base class for transport
 public protocol Transport {
     func open()
     func close()
@@ -362,16 +374,26 @@ public class BaseTransport {
     // Flag indicates whether current transport is writable
     public var writable: Bool = false
     
+    // Sid, generated from server and received from the handshake request
     public var sid: String?
     
+    // Whether this runs on a secure protocol
     var secure: Bool = false
+    
+    // The state of transport
     var readyState : TransportReadyState = .Init
     
+    // Called when there is an error happend
     public var error_block: ((message: String, desciption: String)->Void)?
     
+    // Packet block called when there is a new packet received. Note: Only message packet called this callback. Other packets are internal use
     public var packetBlock: ((packet: EnginePacket)->Void)?
     
+    // Close block called when the transport ready state change to close
     public var close_block: (()->Void)?
+    
+    // Open block called when the transport ready state change to open
+    public var open_block: (()->Void)?
     
     // The name of transport
     var name : String {
@@ -408,6 +430,15 @@ public class BaseTransport {
         }
     }
     
+    public func onOpen(){
+        self.readyState = .Open
+        self.writable = true
+        
+        if let callback = self.open_block {
+            callback()
+        }
+    }
+    
     public func onClose(){
         self.readyState = .Closed
         if let callback = self.close_block {
@@ -424,36 +455,46 @@ public class PollingTransport : BaseTransport, Transport {
     
     // The name of the transport
     override var name : String{
-        get {
-            return "polling"
-        }
+        get { return "polling" }
     }
     
     // Polling state
     var polling = false
     
+    // Polling request
+    var pollingRequest: Request?
+    
+    // Posting request
+    var postingRequest: Request?
+    
+    // Polling complete callback
+    var pollingCompleteBlock: (()->Void)?
+    
     public var pausible : Bool {
         get { return true }
     }
-    
     
     public func open(){
         if self.readyState == .Closed || self.readyState == .Init{
             self.readyState = .Opening
             
+            // First poll sends a handshake request
             self.poll()
             
+            // If we get the handshake request back, we should be Open and poll
+            // FIXME Poll is async, put the loop in the callback or sync with an semphore or event or a task in GCD
             while self.readyState == .Open{
                 self.poll()
             }
         }
     }
     
+    // Poll
     func poll(){
         NSLog("polling")
         self.polling = true
         
-        request(.GET, self.uri())
+        self.pollingRequest = request(.GET, self.uri())
         .response { (request, response, data, error) -> Void in
             // Consider dispatch to the same queue
             NSLog("Response get")
@@ -465,19 +506,88 @@ public class PollingTransport : BaseTransport, Transport {
                     self.onData(nsdata)
                 }
             }
+            else{
+                self.onError("error: Poll request failed", description: response!.description)
+            }
+        }
+    }
+    
+    func onPollingComplete(){
+        if let callback = self.pollingCompleteBlock {
+            callback()
+        }
+    }
+    
+    public override func onData(data: NSData) {
+        NSLog("polling got data %s", Converter.nsdataToNSString(data))
+        
+        let packets = EngineParser.decodePayload(data)
+        
+        for packet in packets{
+            if self.readyState == .Opening {
+                NSLog("Polling got data back, set state to Open")
+                self.readyState = .Open
+            }
+            
+            if packet.type == .Close {
+                NSLog("Got close packet from server")
+                self.onClose()
+                return
+            }
+            
+            if let callback = self.packetBlock {
+                callback(packet: packet)
+            }
+            else{
+                NSLog("onData block not set, ignore packet")
+            }
+            
+            if self.readyState == .Open && self.sid == nil{
+                NSLog("Sid is none after connection openned")
+                return
+            }
+            
+            if self.readyState != .Closed {
+                self.polling = false
+                self.onPollingComplete()
+            }
         }
     }
     
     public func close(){
-        
+        if self.readyState == .Opening || self.readyState == .Open {
+            self.pollingRequest?.cancel()
+            self.postingRequest?.cancel()
+            self.onClose()
+        }
     }
     
     public func write(packets: [EnginePacket]){
-        
-    }
-    
-    public func onOpen(){
-        
+        if self.readyState == .Open{
+            NSLog("Send %d packets out", packets.count)
+            self.writable = false
+            let encoded = EngineParser.encodePayload(packets)
+            
+            self.postingRequest = request(.POST, self.uri(), parameters: ["data": encoded], encoding: .Custom({
+                (URLRequest: URLRequestConvertible, parameters: [String: AnyObject]?) -> (NSURLRequest, NSError?) in
+                    var mutableURLRequest: NSMutableURLRequest! = URLRequest.URLRequest.mutableCopy() as NSMutableURLRequest
+                    mutableURLRequest.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+                    mutableURLRequest.HTTPBody = parameters!["data"] as? NSData!
+                    return (mutableURLRequest, nil)
+                }))
+            .response({ [unowned self](request, response, data, err) -> Void in
+                self.writable = true
+                if err != nil{
+                    self.onError("error", description: "Failed sending data to server")
+                }
+                else{
+                    NSLog("Request send to server succeeded")
+                }
+            })
+        }
+        else{
+            NSLog("Transport not open")
+        }
     }
     
     public func pause(){
@@ -527,10 +637,6 @@ public class WebsocketTransport : BaseTransport, Transport {
     }
     
     public func write(packets: [EnginePacket]){
-        
-    }
-    
-    public func onOpen(){
         
     }
     
@@ -606,7 +712,7 @@ public class EngineSocket{
     // The callback block when a packet received
     var packetBlock: ((EnginePacket)->Void)?
     var openBlock: (()->Void)?
-    var messageBlock: ((NSData)->Void)?
+    public var messageBlock: (([Byte], isBinary: Bool)->Void)?
     
     
     public init(host: String, port: String, path: String = "/socket.io/", secure: Bool = false,
@@ -687,7 +793,7 @@ public class EngineSocket{
                 }
             case .Message:
                 if let data = packet.data{
-                    self.onMessage(Converter.bytearrayToNSData(data))
+                    self.onMessage(data, isBinary: packet.isBinary)
                 }
                 else{
                     NSLog("No data on Message packet, ignore")
@@ -739,9 +845,9 @@ public class EngineSocket{
         }
     }
     
-    func onMessage(data: NSData){
+    func onMessage(data: [Byte], isBinary: Bool){
         if let callback = self.messageBlock {
-            callback(data)
+            callback(data, isBinary: isBinary)
         }
     }
     
