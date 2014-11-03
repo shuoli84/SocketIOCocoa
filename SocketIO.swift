@@ -143,6 +143,29 @@ public struct EnginePacket : Printable, DebugPrintable{
         }
     }
     
+    // Decode from string
+    public init(decodeFromString bytes: [Byte]){
+        // 98 value for 'b'
+        if bytes[0] == 98 {
+            // We are not support base64 encode
+            type = .Error
+            data = Converter.nsstringToNSData("Base 64 is not supported yet")
+        }
+        
+        let packetType = bytes[0] - 48 // value for '0'
+        
+        if let type = PacketType(rawValue: Int(packetType)) {
+            self.type = type
+        }
+        else{
+            self.type = .Error
+        }
+        
+        if bytes.count > 1 {
+            self.data = Converter.bytearrayToNSData([Byte](bytes[1..<bytes.count]))
+        }
+    }
+    
     public func encode() -> NSData {
         var output = NSMutableData()
         var typeValue = self.type
@@ -201,9 +224,14 @@ public class EngineParser {
                 packetLength = packetLength * 10 + Int(c)
             }
             
-            let encodedPacket = Converter.bytearrayToNSData([Byte](byteArray[offset..<offset+packetLength]))
-            
-            packets.append(EnginePacket(decodeFromData: encodedPacket))
+            let restBuffer = [Byte](byteArray[offset..<offset+packetLength])
+            if isBinary {
+                let encodedPacket = Converter.bytearrayToNSData(restBuffer)
+                packets.append(EnginePacket(decodeFromData: encodedPacket))
+            }
+            else {
+                packets.append(EnginePacket(decodeFromString: restBuffer))
+            }
             
             offset += packetLength
         }
