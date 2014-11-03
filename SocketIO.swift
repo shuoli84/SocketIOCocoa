@@ -153,9 +153,7 @@ public struct EnginePacket : Printable, DebugPrintable{
     
     public init(data: [Byte]?, type: PacketType, isBinary: Bool){
         self.type = type
-        if data != nil{
-            self.data = data
-        }
+        self.data = data
         self.isBinary = isBinary
     }
    

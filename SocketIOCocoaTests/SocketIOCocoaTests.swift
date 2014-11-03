@@ -23,29 +23,42 @@ class SocketIOCocoaTests: XCTestCase {
     }
     
     func testPacket() {
+        // Test packet without data
         var packet = EnginePacket(data: nil, type: .Open, isBinary: false)
         XCTAssert(packet.encode().length == 1, "The length should be 1")
         
+        // Test packet with string dat
         var testString = "what the hell"
         packet = EnginePacket(string: testString, type: .Open)
         XCTAssert(!packet.isBinary, "Packet should be string")
         
-        let encoded = packet.encode()
+        var encoded = packet.encode()
         XCTAssert(encoded.length == 14, "Mismatch length")
         
         let decodedPacket = EnginePacket(decodeFromData: encoded)
         XCTAssert(decodedPacket.type == PacketType.Open, "Mismatch type")
+        XCTAssert(decodedPacket.isBinary == false)
+        
+        // Test packet with binary data
+        var binaryData = Converter.nsstringToNSData(testString)
+        packet = EnginePacket(nsdata: binaryData, type: .Open)
+        XCTAssert(packet.isBinary == true)
+        
+        encoded = packet.encode()
+        XCTAssert(encoded.length == 14)
+        
+        packet = EnginePacket(decodeFromData: encoded)
+        XCTAssert(packet.isBinary == true)
     }
     
     func testPayload(){
         let packets = [
             EnginePacket(string: "The first packet", type: .Open),
-            EnginePacket(string: "The second packet", type: .Open),
+            EnginePacket(nsdata: Converter.nsstringToNSData("The second packet"), type: .Open),
             EnginePacket(string: "The third packet", type: .Open),
         ]
         
         var d = EngineParser.encodePayload(packets)
-        Converter.nsdataToByteArray(d)
         var decoded_packets = EngineParser.decodePayload(d)
         
         XCTAssert(Converter.bytearrayToNSString(decoded_packets[0].data!) == "The first packet", "not matching")
