@@ -23,11 +23,13 @@ class SocketIOCocoaTests: XCTestCase {
     }
     
     func testPacket() {
-        var packet = EnginePacket(data: nil, type: .Open)
+        var packet = EnginePacket(data: nil, type: .Open, isBinary: false)
         XCTAssert(packet.encode().length == 1, "The length should be 1")
         
         var testString = "what the hell"
         packet = EnginePacket(string: testString, type: .Open)
+        XCTAssert(!packet.isBinary, "Packet should be string")
+        
         let encoded = packet.encode()
         XCTAssert(encoded.length == 14, "Mismatch length")
         
@@ -46,9 +48,9 @@ class SocketIOCocoaTests: XCTestCase {
         Converter.nsdataToByteArray(d)
         var decoded_packets = EngineParser.decodePayload(d)
         
-        XCTAssert(Converter.nsdataToNSString(decoded_packets[0].data!) == "The first packet", "not matching")
-        XCTAssert(Converter.nsdataToNSString(decoded_packets[1].data!) == "The second packet")
-        XCTAssert(Converter.nsdataToNSString(decoded_packets[2].data!) == "The third packet")
+        XCTAssert(Converter.bytearrayToNSString(decoded_packets[0].data!) == "The first packet", "not matching")
+        XCTAssert(Converter.bytearrayToNSString(decoded_packets[1].data!) == "The second packet")
+        XCTAssert(Converter.bytearrayToNSString(decoded_packets[2].data!) == "The third packet")
     }
     
     func testPerformancePayload() {

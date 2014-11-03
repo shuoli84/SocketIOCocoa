@@ -41,6 +41,11 @@ public class Converter {
         return nsdataToByteArray(nsstringToNSData(str))
     }
     
+    // Convert form byte array to NSString 
+    public class func bytearrayToNSString(bytes: [Byte]) -> NSString {
+        return self.nsdataToNSString(self.bytearrayToNSData(bytes))
+    }
+    
     // Convert from NSString to json object
     public class func nsstringToJSON(str: NSString) -> NSDictionary? {
         let data = self.nsstringToNSData(str)
@@ -66,6 +71,21 @@ public class Converter {
             return nil
         }
     }
+    
+    // Convert from JSON to byte array
+    public class func jsonToByteArray(json: AnyObject) -> [Byte] {
+        if let data = self.jsonToNSData(json) {
+            return self.nsdataToByteArray(data)
+        }
+        else {
+            return []
+        }
+    }
+    
+    // Convert from byte array to json
+    public class func bytearrayToJSON(bytes: [Byte]) -> NSDictionary? {
+        return self.nsdataToJSON(self.bytearrayToNSData(bytes))
+    }
 }
 
 // Mark Engine Packet & Parser
@@ -75,9 +95,23 @@ Engine parser used to encode and decode packet for engineio level. Since we are 
 can support binary, this parser only implemented the binary part. No base64 support.
 */
 
-public enum PacketType: Int {
+enum ASCII: Byte, DebugPrintable, Printable{
+    case _0 = 48, _1, _2, _3, _4, _5, _6, _7, _8, _9
+    case a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+    case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+    
+    var description: String {
+        return "\(self.rawValue)"
+    }
+    
+    var debugDescription: String {
+        return self.description
+    }
+}
+
+public enum PacketType: Byte {
     case Open, Close, Ping, Pong, Message, Upgrade, Noop
-    case Error = -1
+    case Error = 20, Max
     
     var description: String {
         switch self{
@@ -89,21 +123,22 @@ public enum PacketType: Int {
         case .Upgrade: return "Upgrade"
         case .Noop: return "Noop"
         case .Error: return "Error"
+        case .Max: return "Max"
         }
     }
 }
 
 public struct EnginePacket : Printable, DebugPrintable{
     public var type: PacketType
-    public var data: NSData?
+    public var data: [Byte]?
+    public var isBinary: Bool = false
     
     public var description: String{
         if let data = self.data {
-            let bytearray = Converter.nsdataToByteArray(data)
-            return "\(type.description): \(bytearray)"
+            return "[\(type.description)][\(isBinary)]: \(data)"
         }
         else {
-            return "\(type.description): \(self.data)"
+            return "[\(type.description)][\(isBinary)]: \(self.data)"
         }
     }
     
@@ -112,72 +147,106 @@ public struct EnginePacket : Printable, DebugPrintable{
     }
     
     public var json: NSDictionary {
-        let json = NSJSONSerialization.JSONObjectWithData(self.data!, options: .MutableContainers, error: nil) as Dictionary<String, AnyObject!>
+        let json = NSJSONSerialization.JSONObjectWithData(Converter.bytearrayToNSData(self.data!), options: .MutableContainers, error: nil) as Dictionary<String, AnyObject!>
         return json
     }
     
-    public init(data: NSData?, type: PacketType){
+    public init(data: [Byte]?, type: PacketType, isBinary: Bool){
         self.type = type
-        self.data = data
+        if data != nil{
+            self.data = data
+        }
+        self.isBinary = isBinary
     }
    
     public init(string: String, type: PacketType){
-        var data = string.dataUsingEncoding(NSUTF8StringEncoding)
-        self.init(data: data, type: type)
+        var data = Converter.nsstringToByteArray(string)
+        self.init(data: data, type: type, isBinary: false)
+    }
+    
+    public init(nsdata: NSData, type: PacketType){
+        self.init(data:Converter.nsdataToByteArray(nsdata), type: type, isBinary: true)
     }
     
     public init(decodeFromData data: NSData){
         let buf : [Byte] = Converter.nsdataToByteArray(data)
-        if let packetType = PacketType(rawValue: Int(buf[0])){
-            self.type = packetType
-        }
-        else{
-            self.type = .Error
-        }
+        let typeByte = buf[0]
         
-        if data.length > 1 {
-            self.data = Converter.bytearrayToNSData([Byte](buf[1..<buf.count]))
+        if typeByte >= ASCII._0.rawValue && typeByte <= ASCII._9.rawValue {
+            // This is a string
+            self.init(decodeFromString: buf)
+        }
+        else if typeByte < PacketType.Max.rawValue {
+            // This is a binary
+            let isBinary = true
+            var type : PacketType = .Error
+            var data : [Byte]?
+            
+            if let packetType = PacketType(rawValue: buf[0]){
+                type = packetType
+            }
+            
+            if buf.count > 1 {
+                data = [Byte](buf[1..<buf.count])
+            }
+            
+            self.init(data: data, type: type, isBinary: isBinary)
         }
         else{
-            self.data = nil
+            self.init(data: nil, type: .Error, isBinary: false)
         }
     }
     
     // Decode from string
-    public init(decodeFromString bytes: [Byte]){
+    init(decodeFromString bytes: [Byte]){
+        var type : PacketType = .Error
+        var data : [Byte]?
+        var isBinary = false
+        
         // 98 value for 'b'
         if bytes[0] == 98 {
             // We are not support base64 encode
             type = .Error
-            data = Converter.nsstringToNSData("Base 64 is not supported yet")
+            data = Converter.nsstringToByteArray("Base 64 is not supported yet")
         }
         
         let packetType = bytes[0] - 48 // value for '0'
         
-        if let type = PacketType(rawValue: Int(packetType)) {
-            self.type = type
+        if let ptype = PacketType(rawValue: packetType) {
+            type = ptype
         }
         else{
-            self.type = .Error
+            type = .Error
         }
         
         if bytes.count > 1 {
-            self.data = Converter.bytearrayToNSData([Byte](bytes[1..<bytes.count]))
+            data = [Byte](bytes[1..<bytes.count])
         }
+        
+        self.init(data: data, type: type, isBinary: isBinary)
     }
     
     public func encode() -> NSData {
         var output = NSMutableData()
         var typeValue = self.type
-        output.appendBytes(&typeValue, length: 1)
-        if let data = self.data {
-            output.appendData(self.data!)
+        
+        if isBinary {
+            output.appendBytes(&typeValue, length: 1)
         }
+        else {
+            var typeByte : Byte = typeValue.rawValue + ASCII._0.rawValue
+            output.appendBytes(&typeByte, length: 1)
+        }
+        
+        if let data = self.data {
+            output.appendData(Converter.bytearrayToNSData(data))
+        }
+        
         return output
     }
 }
 
-let error_packet = EnginePacket(data: nil, type: .Error)
+let error_packet = EnginePacket(data: nil, type: .Error, isBinary: false)
 
 public class EngineParser {
     public class func encodePayload (packets: [EnginePacket]) -> NSData {
@@ -606,7 +675,7 @@ public class EngineSocket{
             switch packet.type{
             case .Open:
                 if let data = packet.data{
-                    if let json = Converter.nsdataToJSON(data){
+                    if let json = Converter.bytearrayToJSON(data){
                         self.onHandshake(json)
                     }
                     else{
@@ -620,7 +689,7 @@ public class EngineSocket{
                 }
             case .Message:
                 if let data = packet.data{
-                    self.onMessage(data)
+                    self.onMessage(Converter.bytearrayToNSData(data))
                 }
                 else{
                     NSLog("No data on Message packet, ignore")
@@ -629,7 +698,7 @@ public class EngineSocket{
                 break
             case .Error:
                 if let data = packet.data {
-                    self.onError("error", reason: Converter.nsdataToNSString(data))
+                    self.onError("error", reason: Converter.bytearrayToNSString(data))
                 }
                 else{
                     self.onError("error")
@@ -708,12 +777,12 @@ public class EngineSocket{
     send data
     */
     func send(data: NSData, callback: (()->Void)? = nil){
-        self.send(.Message, data: data, callback: callback)
+        self.send(.Message, data: Converter.nsdataToByteArray(data), isBinary: false, callback: callback)
     }
     
     // send packet and data with a callback
-    func send(packetType: PacketType, data: NSData? = nil, callback: (()->Void)? = nil){
-        let packet = EnginePacket(data: data, type:packetType)
+    func send(packetType: PacketType, data: [Byte]? = nil, isBinary: Bool, callback: (()->Void)? = nil){
+        let packet = EnginePacket(data: data, type:packetType, isBinary: false) // TODO FIX ME
         self.packet(packet, callback: callback)
     }
     
