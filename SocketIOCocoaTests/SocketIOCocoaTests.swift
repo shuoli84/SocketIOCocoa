@@ -111,11 +111,42 @@ class SocketIOCocoaTests: XCTestCase {
         }
     }
 
-    func testBaseTransport() {
-        let transport = BaseTransport(
+    func testBaseTransportURI() {
+        let transport = PollingTransport(
             host: "localhost", path: "/socket.io/", port: "8001", secure: false)
-        XCTAssertNotNil(transport, "Should no nil")
+        
+        let uri = transport.uri()
+        var url = NSURL(string: uri)!
+        XCTAssertEqual("localhost", url.host!)
+        XCTAssertEqual(8001, url.port!)
+        XCTAssertEqual("/socket.io", url.path!)
+        XCTAssertEqual("http", url.scheme!)
+        
+        let query : String = url.query!
+        let params : [String: String] = query.parametersFromQueryString()
+        XCTAssertEqual("3", params["EIO"]!)
+        XCTAssertEqual("polling", params["transport"]!)
+        
+        println(uri)
     }
+    
+    
+    func testBaseTransportOpen() {
+        var expectation = self.expectationWithDescription("async request")
+        let transport = PollingTransport(
+            host: "localhost", path: "/socket.io/", port: "8001", secure: false)
+        // var packet : EnginePacket?
+        transport.onPacket { (p: EnginePacket) -> Void in
+            println(p)
+            expectation.fulfill()
+        }
+        transport.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+        
+        // XCTAssert(packet != nil)
+        // XCTAssert(packet?.type == .Open)
+    }
+    
     
     func testAlamofire() {
         var expectation = self.expectationWithDescription("asynchronous request")
@@ -128,5 +159,12 @@ class SocketIOCocoaTests: XCTestCase {
         }
         
         self.waitForExpectationsWithTimeout(10.0, handler: nil)
+    }
+    
+    func testEngineSocket(){
+        var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
+        XCTAssertNotNil(socket)
+        
+        socket.open()
     }
 }
