@@ -305,6 +305,14 @@ class SocketIOCocoaTests: XCTestCase {
         XCTAssert(Converter.nsdataToNSString(data.objectForKey("data") as NSData) == "hell")
     }
     
+    func testMeasureSocketIOEncode(){
+        self.measureBlock(){
+            for _ in 0...200{
+                self.testSocketIOPacket()
+            }
+        }
+    }
+    
     func testSocketIOPacket(){
         var socketPacket = SocketIOPacket(type: .Event, data: [
             "what": "the"
@@ -317,8 +325,7 @@ class SocketIOCocoaTests: XCTestCase {
             "array": [1,2, Converter.nsstringToNSData("great")]
             ] as NSDictionary, id: "1231242", nsp: "chat")
         
-        let results = socketPacket.encodeAsBinary()
-        println(results)
+        let results = socketPacket.encode()
         XCTAssert(3 == results.count)
     }
 }

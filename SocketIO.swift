@@ -1300,7 +1300,7 @@ public struct SocketIOPacket: Printable{
     }
     
     // TODO Check how to void several layer of bytearray -> data
-    public func encodeAsBinary() -> [([Byte], Bool)]{
+    public func encode() -> [([Byte], Bool)]{
         var results = [([Byte], Bool)]()
         var (packet, buffers) = BinaryParser.deconstructPacket(self)
         
