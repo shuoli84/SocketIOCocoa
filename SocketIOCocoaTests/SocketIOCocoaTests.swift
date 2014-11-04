@@ -297,5 +297,11 @@ class SocketIOCocoaTests: XCTestCase {
         var result = BinaryParser.deconstructPacket(socketPacket)
         println(Converter.jsonToNSString(result.packet.data!))
         XCTAssert(result.buffers.count == 2)
+        
+        let packet = BinaryParser.reconstructPacket(result.packet, buffers: result.buffers)
+        println(packet)
+        XCTAssert(packet.attachments == 0)
+        let data = packet.data as NSDictionary
+        XCTAssert(Converter.nsdataToNSString(data.objectForKey("data") as NSData) == "hell")
     }
 }

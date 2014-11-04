@@ -1190,6 +1190,43 @@ func deconstructData(data: AnyObject, inout buffers: [NSData]) -> AnyObject{
     return data
 }
 
+func reconstructData(data: AnyObject, buffers: [NSData]) -> AnyObject {
+    if data is NSDictionary {
+        let dict = data as NSDictionary
+        if dict.valueForKey("_placeholder") != nil {
+            let bufferIndex: Int? = dict.objectForKey("num")?.integerValue
+            if bufferIndex != nil{
+                return buffers[bufferIndex!]
+            }
+        }
+        else{
+            var returnDict : NSMutableDictionary = [:]
+            
+            let keys = dict.allKeys
+            for key in keys {
+                if let strkey = key as? NSString {
+                    let value: AnyObject = data.objectForKey(key)!
+                    returnDict.setObject(reconstructData(value, buffers), forKey: strkey)
+                }
+                else{
+                    NSLog("Dict has a non string key")
+                }
+            }
+            
+            return returnDict as AnyObject
+        }
+    }
+    else if data is NSArray {
+        var returnArray: [AnyObject] = []
+        for item in data as NSArray{
+            returnArray.append(reconstructData(item, buffers))
+        }
+        return returnArray
+    }
+    
+    return data
+}
+
 // Binary parser doing binary packet deconstruct and contruct
 public class BinaryParser {
     public class func deconstructPacket(packet: SocketIOPacket) -> (packet: SocketIOPacket, buffers: [NSData]){
@@ -1200,6 +1237,16 @@ public class BinaryParser {
         }
         else {
             return (packet, buffers)
+        }
+    }
+    
+    public class func reconstructPacket(packet: SocketIOPacket, buffers: [NSData]) -> SocketIOPacket{
+        if let data: AnyObject = packet.data {
+            let constructedData: AnyObject = reconstructData(data, buffers)
+            return SocketIOPacket(type: packet.type, data: constructedData, nsp: packet.nsp, attachments: 0)
+        }
+        else{
+            return packet
         }
     }
 }
