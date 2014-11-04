@@ -393,6 +393,9 @@ public protocol EngineTransportDelegate: class {
     
     // Called when the transport closed
     func transportOnClose(transport: Transport)
+    
+    // Called when the dispatch queue needed
+    func transportDispatchQueue(transport: Transport) -> dispatch_queue_t
 }
 
 // Base class for transport
@@ -534,18 +537,13 @@ public class PollingTransport : BaseTransport{
     }
     
     public override func open(){
-        if self.readyState == .Closed || self.readyState == .Init{
-            self.readyState = .Opening
-            
-            // First poll sends a handshake request
-            self.poll()
-            
-            // If we get the handshake request back, we should be Open and poll
-            // FIXME Poll is async, put the loop in the callback or sync with an semphore or event or a task in GCD
-            while self.readyState == .Open{
+        dispatch_async(self.dispatchQueue(), { () -> Void in
+            if self.readyState == .Closed || self.readyState == .Init{
+                self.readyState = .Opening
+                // First poll sends a handshake request
                 self.poll()
             }
-        }
+        })
     }
     
     // Poll
@@ -556,18 +554,39 @@ public class PollingTransport : BaseTransport{
         self.pollingRequest = request(.GET, self.uri())
         .response { (request, response, data, error) -> Void in
             // Consider dispatch to the same queue
-            NSLog("Response get")
-            
-            if response?.statusCode >= 200 && response?.statusCode < 300 {
-                NSLog("Request succeeded")
+            dispatch_async(self.dispatchQueue()){ ()-> Void in
+                NSLog("Response get")
                 
-                if let nsdata = data as? NSData {
-                    self.onData(nsdata)
+                if response?.statusCode >= 200 && response?.statusCode < 300 {
+                    NSLog("Request succeeded")
+                    
+                    if let nsdata = data as? NSData {
+                        self.onData(nsdata)
+                    }
+                }
+                else{
+                    self.onError("error: Poll request failed", description: response!.description)
+                }
+                
+                if self.readyState == .Open{
+                    NSLog("The state is Open, keep polling")
+                    dispatch_async(self.dispatchQueue()){
+                        if self.readyState == .Open{
+                            self.poll()
+                        }
+                    }
                 }
             }
-            else{
-                self.onError("error: Poll request failed", description: response!.description)
-            }
+        }
+    }
+    
+    func dispatchQueue() -> dispatch_queue_t {
+        if let delegate = self.delegate{
+            return delegate.transportDispatchQueue(self)
+        }
+        else{
+            // Default we run on main queue
+            return dispatch_get_main_queue()
         }
     }
     
@@ -885,6 +904,11 @@ public class EngineSocket: EngineTransportDelegate{
     public func transportOnClose(transport: Transport) { }
     
     public func transportOnOpen(transport: Transport) { }
+    
+    public func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
+        // All transport related task should run on socket's queue
+        return self.queue
+    }
     
     // End of EngineTransport Delegate
     

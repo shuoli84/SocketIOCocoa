@@ -154,6 +154,9 @@ class SocketIOCocoaTests: XCTestCase {
         class TestTransportDelegate: EngineTransportDelegate{
             var packet: EnginePacket?
             var expectation: XCTestExpectation
+            var dispatchQueue: dispatch_queue_t = {
+                return dispatch_queue_create("test queue", DISPATCH_QUEUE_SERIAL)
+                }()
             
             init(expectation: XCTestExpectation){
                 self.expectation = expectation
@@ -172,6 +175,9 @@ class SocketIOCocoaTests: XCTestCase {
                 self.packet = packet
                 XCTAssert(packet.type == .Open)
                 self.expectation.fulfill()
+            }
+            private func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
+                return self.dispatchQueue
             }
         }
         
