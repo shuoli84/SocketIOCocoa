@@ -151,22 +151,33 @@ class SocketIOCocoaTests: XCTestCase {
         let transport = PollingTransport(
             host: "localhost", path: "/socket.io/", port: "8001", secure: false)
         
-        var packet : EnginePacket?
-        transport.onPacket { (p: EnginePacket) -> Void in
-            packet = p
-            XCTAssert(p.type == .Open)
-            expectation.fulfill()
+        class TestTransportDelegate: EngineTransportDelegate{
+            var packet: EnginePacket?
+            var expectation: XCTestExpectation
+            
+            init(expectation: XCTestExpectation){
+                self.expectation = expectation
+            }
+            
+            private func transportOnClose(transport: Transport) {
+            }
+            private func transportOnError(transport: Transport, error: String, withDescription description: String) {
+                NSException(name: error, reason: description, userInfo: nil)
+            }
+            private func transportOnOpen(transport: Transport) {
+                
+            }
+            private func transportOnPacket(transport: Transport, packet: EnginePacket) {
+                self.packet = packet
+                XCTAssert(packet.type == .Open)
+                self.expectation.fulfill()
+            }
         }
+        
+        var delegate = TestTransportDelegate(expectation: expectation)
+        transport.delegate = delegate
         transport.open()
         self.waitForExpectationsWithTimeout(30, handler: nil)
-        println(packet)
-        
-        expectation = self.expectationWithDescription("send data")
-        transport.write([
-            EnginePacket(string: "Hello world", type: .Message),
-            EnginePacket(nsdata: Converter.nsstringToNSData("Hello world"), type: .Message),
-            ])
-        self.waitForExpectationsWithTimeout(5, handler:nil)
     }
     
     func testEngineSocket(){
@@ -174,12 +185,28 @@ class SocketIOCocoaTests: XCTestCase {
         var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
         XCTAssertNotNil(socket)
         
-        socket.messageBlock = {
-            (bytes: [Byte], isBinary: Bool) -> Void in
-            println(bytes)
-            expectation.fulfill()
+        class TestSocketDelegate: EngineSocketDelegate{
+            var expectation: XCTestExpectation
+            
+            init(expectation: XCTestExpectation){
+                self.expectation = expectation
+            }
+            
+            private func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
+                println("Recieved packet")
+            }
+            
+            private func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
+                println(data)
+                expectation.fulfill()
+            }
+            
+            private func socketOnOpen(socket: EngineSocket) { }
+            private func socketOnClose(socket: EngineSocket) { }
         }
         
+        var delegate = TestSocketDelegate(expectation: expectation)
+        socket.delegate = delegate
         socket.open()
         
         self.waitForExpectationsWithTimeout(30, handler: nil)

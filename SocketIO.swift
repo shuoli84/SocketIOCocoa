@@ -1,18 +1,67 @@
-//
-//  EngineParser.swift
-//  SocketIOCocoa
-//
-//  Created by LiShuo on 14/11/1.
-//  Copyright (c) 2014年 LiShuo. All rights reserved.
-//
+/**************************************************************
+       _____            __        __  ________
+      / ___/____  _____/ /_____  / /_/  _/ __ \
+      \__ \/ __ \/ ___/ //_/ _ \/ __// // / / /
+     ___/ / /_/ / /__/ ,< /  __/ /__/ // /_/ /
+    /____/\____/\___/_/|_|\___/\__/___/\____/
+
+    SocketIO 1.0 Swift client.
+
+Introduction
+-------------
+The official SocketIO 1.0 contains 2 layers:
+
+1. EngineIO
+The data transportation layer. Polling, websocket, wrapped in this layer and expose simple interfaces.
+
+2. SocketIO
+The SocketIO protocol layer, namespace, multiplexing etc.
+
+We are doing the same here. We support xhr polling and websocket transports. Utilize alamofire and starscream to do the heavy lifting 
+on underlying request and socket.
+
+Installation
+-------------
+Due to the broken swift dependency management, I include all my dependencies by copy and paste. Until Cocoapod swift support become mature,
+I suggest you do so. 
+
+Following files are from external depot (Go and Search the name), they located under Vender folder:
+alamofire.swift
+Dollar.swfit
+starscream.swift
+SwifterSnippet.swift
+
+The main swift file:
+SocketIO.swift
+
+Copy above to your project for now.
+
+Concurrency model
+-------------
+The client has many state, which requires a consistent and elegant concurrency model. GCD here. All state involved 
+operations should be dispatched on the dedicated queue, we also call callbacks in this queue, feel free to dispatch 
+it in the callback.
+
+Classes
+-------------
+Converter: Used to do conversion between NSString, [Byte], NSData, JSON
+
+EnginePacket: The packet struct in EngineIO layer
+EngineParser: The parser used to do payload encode and decode
+Transport, BaseTransport, PollingTransport, WebsocketTransport: The transport class hierachy
+EngineSocket: Represent as a socket, build upon transports, provides easy interface and manage connection lifecycle
+
+SocketIOPacket: The packet struct in SocketIO layer
+SocketIOParser: The parser used to serialize and deserialize packets containing binary etc
+SocketIOSocket: The interface for client
+
+All the classes are in the single file, it sucks, but easy to be copy and paste into your project. More than Happier 
+to seperate them when Cocoapod swift matured.
+***************************************************************/
 
 import Foundation
 
-// Mark Converter
-
-/**
-Converter is the helper utility to convert different types
-*/
+// Converter is the helper utility to convert different types
 public class Converter {
     // Convert from NSString -> NSData
     public class func nsstringToNSData(str : NSString) -> NSData {
@@ -48,8 +97,7 @@ public class Converter {
     
     // Convert from NSString to json object
     public class func nsstringToJSON(str: NSString) -> NSDictionary? {
-        let data = self.nsstringToNSData(str)
-        return self.nsdataToJSON(data)
+        return self.nsdataToJSON(self.nsstringToNSData(str))
     }
     
     // Convert from NSData to json object
@@ -328,37 +376,54 @@ public enum TransportReadyState: Printable, DebugPrintable{
 }
 
 
+/*
+Concurrency model for transport. Due to the shared state between operations, all state changing method should be called 
+in Socket's queue, including EngineIO level and SocketIO level.
+*/
+
+public protocol EngineTransportDelegate: class {
+    // Called when error occured
+    func transportOnError(transport: Transport, error: String, withDescription description: String)
+    
+    // Called when transport opened
+    func transportOnOpen(transport: Transport)
+    
+    // Called when a packet received
+    func transportOnPacket(transport: Transport, packet: EnginePacket)
+    
+    // Called when the transport closed
+    func transportOnClose(transport: Transport)
+}
+
 // Base class for transport
 public protocol Transport {
-    func open()
-    func close()
-    func write(packets: [EnginePacket])
-    func onOpen()
-    func onData(data: NSData)
-    func onClose()
-    func onError(message: String, description: String)
-    
-    // Whether the transport supports pausible
-    var pausible : Bool { get }
-    
-    // The pause method
-    func pause()
-    
-    // The sid
-    var sid : String? { get set }
-    
     /**
     Whether the transport is writable. The client should always check the writable flag. 
     Transport class don't have a write queue. So each write goes straight into send method.
     NOTE: There could be race condition
     */
-    var writable : Bool { get set }
+    var writable: Bool { get set }
     
-    mutating func onPacket(callback : (packet: EnginePacket)->Void)
+    // The sid
+    var sid : String? { get set }
+    
+    // Whether the transport supports pausible
+    var pausible : Bool { get }
+    
+    // Delegate
+    weak var delegate: EngineTransportDelegate? { get set }
+    
+    func open()
+    
+    func close()
+    
+    func write(packets: [EnginePacket])
+   
+    func pause()
+   
 }
 
-
-public class BaseTransport {
+public class BaseTransport: Transport {
     // Engine protocol version
     let protocolVersion: Int = 3
     
@@ -382,18 +447,11 @@ public class BaseTransport {
     
     // The state of transport
     var readyState : TransportReadyState = .Init
+   
+    // The delegate
+    public weak var delegate: EngineTransportDelegate?
     
-    // Called when there is an error happend
-    public var error_block: ((message: String, desciption: String)->Void)?
-    
-    // Packet block called when there is a new packet received. Note: Only message packet called this callback. Other packets are internal use
-    public var packetBlock: ((packet: EnginePacket)->Void)?
-    
-    // Close block called when the transport ready state change to close
-    public var close_block: (()->Void)?
-    
-    // Open block called when the transport ready state change to open
-    public var open_block: (()->Void)?
+    public var pausible : Bool { get { return false } }
     
     // The name of transport
     var name : String {
@@ -411,8 +469,8 @@ public class BaseTransport {
     }
     
     public func onError(message: String, description: String){
-        if let callback = self.error_block {
-            callback(message: message, desciption: description)
+        if let delegate = self.delegate {
+            delegate.transportOnError(self, error: message, withDescription: description)
         }
         else{
             NSLog("onError block not set, ignore error")
@@ -420,9 +478,9 @@ public class BaseTransport {
     }
     
     public func onData(data: NSData){
-        if let callback = self.packetBlock {
+        if let delegate = self.delegate {
             for packet in EngineParser.decodePayload(data){
-                callback(packet: packet)
+                delegate.transportOnPacket(self, packet: packet)
             }
         }
         else{
@@ -434,24 +492,25 @@ public class BaseTransport {
         self.readyState = .Open
         self.writable = true
         
-        if let callback = self.open_block {
-            callback()
+        if let delegate = self.delegate {
+            delegate.transportOnOpen(self)
         }
     }
     
     public func onClose(){
         self.readyState = .Closed
-        if let callback = self.close_block {
-            callback()
+        if let delegate = self.delegate {
+            delegate.transportOnClose(self)
         }
     }
     
-    public func onPacket(callback: (packet: EnginePacket)->Void){
-        self.packetBlock = callback
-    }
+    public func open() {}
+    public func close() {}
+    public func pause() {}
+    public func write(packets: [EnginePacket]) {}
 }
 
-public class PollingTransport : BaseTransport, Transport {
+public class PollingTransport : BaseTransport{
     
     // The name of the transport
     override var name : String{
@@ -470,11 +529,11 @@ public class PollingTransport : BaseTransport, Transport {
     // Polling complete callback
     var pollingCompleteBlock: (()->Void)?
     
-    public var pausible : Bool {
+    public override var pausible : Bool {
         get { return true }
     }
     
-    public func open(){
+    public override func open(){
         if self.readyState == .Closed || self.readyState == .Init{
             self.readyState = .Opening
             
@@ -519,7 +578,7 @@ public class PollingTransport : BaseTransport, Transport {
     }
     
     public override func onData(data: NSData) {
-        NSLog("polling got data %s", Converter.nsdataToNSString(data))
+        NSLog("polling got data %s", Converter.nsdataToByteArray(data).description)
         
         let packets = EngineParser.decodePayload(data)
         
@@ -535,11 +594,13 @@ public class PollingTransport : BaseTransport, Transport {
                 return
             }
             
-            if let callback = self.packetBlock {
-                callback(packet: packet)
+            if let delegate = self.delegate {
+                for packet in EngineParser.decodePayload(data){
+                    delegate.transportOnPacket(self, packet: packet)
+                }
             }
             else{
-                NSLog("onData block not set, ignore packet")
+                NSLog("Delegate not set, ignore packet")
             }
             
             if self.readyState == .Open && self.sid == nil{
@@ -554,7 +615,7 @@ public class PollingTransport : BaseTransport, Transport {
         }
     }
     
-    public func close(){
+    override public func close(){
         if self.readyState == .Opening || self.readyState == .Open {
             self.pollingRequest?.cancel()
             self.postingRequest?.cancel()
@@ -562,7 +623,7 @@ public class PollingTransport : BaseTransport, Transport {
         }
     }
     
-    public func write(packets: [EnginePacket]){
+    override public func write(packets: [EnginePacket]){
         if self.readyState == .Open{
             NSLog("Send %d packets out", packets.count)
             self.writable = false
@@ -590,9 +651,7 @@ public class PollingTransport : BaseTransport, Transport {
         }
     }
     
-    public func pause(){
-        
-    }
+    public override func pause(){}
     
     // Construct the uri used for request
     public func uri() -> String{
@@ -618,37 +677,38 @@ public class PollingTransport : BaseTransport, Transport {
     }
 }
 
-public class WebsocketTransport : BaseTransport, Transport {
+public class WebsocketTransport : BaseTransport{
     // The name of the transport
     override var name : String{
         get { return "websocket" }
     }
     
-    public var pausible : Bool {
-        get { return false }
-    }
+    override public func open(){}
     
-    public func open(){
-        
-    }
+    override public func close(){}
     
-    public func close(){
-        
-    }
-    
-    public func write(packets: [EnginePacket]){
-        
-    }
-    
-    public func pause(){
-        
-    }
+    override public func write(packets: [EnginePacket]){}
 }
 
 
 // Mark Engine Socket
 
-enum EngineSocketReadyState : Int{
+// The delegate for EngineSocket
+public protocol EngineSocketDelegate: class{
+    // Called when the socket state is Open
+    func socketOnOpen(socket: EngineSocket)
+    
+    // Called when the socket state is Closed
+    func socketOnClose(socket: EngineSocket)
+    
+    // Called when a new packet received
+    func socketOnPacket(socket: EngineSocket, packet: EnginePacket)
+   
+    // Called when there is a message decoded
+    func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool)
+}
+
+enum EngineSocketReadyState : Int, Printable{
     case Init, Open, Opening, Closing, Closed, Upgrading
     
     var description: String {
@@ -663,7 +723,10 @@ enum EngineSocketReadyState : Int{
     }
 }
 
-public class EngineSocket{
+// A counter which counts how many EngineSocket created
+var socketCount: Int = 0
+
+public class EngineSocket: EngineTransportDelegate{
     // Whether the protocol is secure
     var secure: Bool = false
     
@@ -678,6 +741,12 @@ public class EngineSocket{
     
     // Sid generated by server, unique identifier for one socket client
     var id: String?
+    
+    // The running queue, create it when create a new instance
+    var queue: dispatch_queue_t = {
+        ++socketCount
+        return dispatch_queue_create("com.menic.EngineIO-queue\(socketCount)", DISPATCH_QUEUE_SERIAL)
+    }()
     
     // Available transports
     var transports: [String]
@@ -709,11 +778,8 @@ public class EngineSocket{
     // The write calllback queue
     var writeCallbackQueue: [(()->Void)?] = []
     
-    // The callback block when a packet received
-    var packetBlock: ((EnginePacket)->Void)?
-    var openBlock: (()->Void)?
-    public var messageBlock: (([Byte], isBinary: Bool)->Void)?
-    
+    // The delegate
+    public weak var delegate: EngineSocketDelegate?
     
     public init(host: String, port: String, path: String = "/socket.io/", secure: Bool = false,
         transports: [String] = ["polling", "websocket"], upgrade: Bool = true, config: [String:AnyObject] = [:]) {
@@ -735,21 +801,15 @@ public class EngineSocket{
             }
         }
         
-        if transport != nil{
-            if self.id != nil{
-                transport!.sid = self.id
-            }
+        if transport != nil && self.id != nil{
+            transport!.sid = self.id
         }
         
         return transport
     }
     
     func setTransport(inout transport: Transport){
-        transport.onPacket({
-            [unowned self](packet: EnginePacket) -> Void in
-            self.onPacket(packet)
-        })
-        
+        transport.delegate = self
         self.transport = transport
     }
     
@@ -767,13 +827,14 @@ public class EngineSocket{
         }
     }
     
-    func onPacket(packet: EnginePacket){
+    // EngineTransportDelegate
+    public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         NSLog("[EngineSocket] Received one packet")
         if self.readyState == .Open || self.readyState == .Opening{
             NSLog("[EngineSocket] Receive: [%s]", packet.type.description)
             
-            if let callback = self.packetBlock {
-                callback(packet)
+            if let delegate = self.delegate {
+                delegate.socketOnPacket(self, packet: packet)
             }
             
             switch packet.type{
@@ -793,7 +854,9 @@ public class EngineSocket{
                 }
             case .Message:
                 if let data = packet.data{
-                    self.onMessage(data, isBinary: packet.isBinary)
+                    if let delegate = self.delegate {
+                        delegate.socketOnData(self, data: data, isBinary: packet.isBinary)
+                    }
                 }
                 else{
                     NSLog("No data on Message packet, ignore")
@@ -816,6 +879,14 @@ public class EngineSocket{
             NSLog("packet received with socket readyState [%s]", self.readyState.description)
         }
     }
+    
+    public func transportOnError(transport: Transport, error: String, withDescription description: String) { }
+    
+    public func transportOnClose(transport: Transport) { }
+    
+    public func transportOnOpen(transport: Transport) { }
+    
+    // End of EngineTransport Delegate
     
     func onHandshake(data: NSDictionary){
         if let sid = data["sid"] as? String{
@@ -845,18 +916,13 @@ public class EngineSocket{
         }
     }
     
-    func onMessage(data: [Byte], isBinary: Bool){
-        if let callback = self.messageBlock {
-            callback(data, isBinary: isBinary)
-        }
-    }
-    
     func onOpen(){
         NSLog("Socket Open")
         
         self.readyState = .Open
-        if let callback = self.openBlock {
-            callback()
+        
+        if let delegate = self.delegate {
+            delegate.socketOnOpen(self)
         }
         
         self.flush() // Flush out cached packets
