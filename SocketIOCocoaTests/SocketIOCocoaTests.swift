@@ -286,4 +286,16 @@ class SocketIOCocoaTests: XCTestCase {
         
         self.waitForExpectationsWithTimeout(30, handler: nil)
     }
+    
+    func testBinaryParser() {
+        var socketPacket = SocketIOPacket(type: .Event, data: [
+            "what": "the",
+            "data": Converter.nsstringToNSData("hell"),
+            "array": [1,2, Converter.nsstringToNSData("great")]
+            ] as NSDictionary)
+        
+        var result = BinaryParser.deconstructPacket(socketPacket)
+        println(Converter.jsonToNSString(result.packet.data!))
+        XCTAssert(result.buffers.count == 2)
+    }
 }

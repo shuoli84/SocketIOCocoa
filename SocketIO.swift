@@ -150,6 +150,15 @@ enum ASCII: Byte {
     case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 }
 
+/*
+       __            _             _____  ___
+      /__\ __   __ _(_)_ __   ___  \_   \/___\
+     /_\| '_ \ / _` | | '_ \ / _ \  / /\//  //
+    //__| | | | (_| | | | | |  __/\/ /_/ \_//
+    \__/|_| |_|\__, |_|_| |_|\___\____/\___/
+               |___/
+*/
+
 // The packet type for engine, the lower level of socketio
 public enum PacketType: Byte {
     case Open, Close, Ping, Pong, Message, Upgrade, Noop, Error = 20, Max
@@ -736,7 +745,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                     self.websocket?.writeData(packet.encode())
                 }
                 else {
-                    // Check whether we should avoid the extra data->string encode and stream it out
+                    // TODO Check whether we should avoid the extra data->string encode and stream it out
                     self.websocket?.writeString(Converter.nsdataToNSString(packet.encode()))
                 }
             }
@@ -1115,5 +1124,100 @@ public class EngineSocket: EngineTransportDelegate{
         self.writeQueue.append(packet)
         self.writeCallbackQueue.append(callback)
         self.flush()
+    }
+}
+
+/*
+       _____            __        __  ________
+      / ___/____  _____/ /_____  / /_/  _/ __ \
+      \__ \/ __ \/ ___/ //_/ _ \/ __// // / / /
+     ___/ / /_/ / /__/ ,< /  __/ /__/ // /_/ /
+    /____/\____/\___/_/|_|\___/\__/___/\____/
+*/
+
+public enum SocketIOPacketType: Int, Printable{
+    case Connect = 0, Disconnect, Event, Ack, Error, BinaryEvent, BinaryAck
+    
+    public var description: String {
+        switch self{
+        case Connect: return "Connect"
+        case Disconnect: return "Disconnect"
+        case Event: return "Event"
+        case Ack: return "Ack"
+        case Error: return "Error"
+        case BinaryEvent: return "BinaryEvent"
+        case BinaryAck: return "BinaryAck"
+        }
+    }
+}
+
+
+func deconstructData(data: AnyObject, inout buffers: [NSData]) -> AnyObject{
+    if data is NSDictionary {
+        var returnDict : NSMutableDictionary = [:]
+        
+        let keys = (data as NSDictionary).allKeys
+        for key in keys {
+            if let strkey = key as? NSString {
+                let value: AnyObject = data.objectForKey(key)!
+                returnDict.setObject(deconstructData(value, &buffers), forKey: strkey)
+            }
+            else{
+                NSLog("Dict has a non string key")
+            }
+        }
+        
+        return returnDict as AnyObject
+    }
+    else if data is NSArray {
+        var returnArray: [AnyObject] = []
+        for item in data as NSArray {
+            returnArray.append(deconstructData(item, &buffers))
+        }
+        
+        return returnArray as AnyObject
+    }
+    else if data is NSData {
+        var placeHolder: NSDictionary = [
+            "_placeholder": true,
+            "num": buffers.count
+        ]
+        
+        buffers.append(data as NSData)
+        return placeHolder
+    }
+    
+    return data
+}
+
+// Binary parser doing binary packet deconstruct and contruct
+public class BinaryParser {
+    public class func deconstructPacket(packet: SocketIOPacket) -> (packet: SocketIOPacket, buffers: [NSData]){
+        var buffers: [NSData] = []
+        if let data: AnyObject = packet.data {
+            let deconstructedData: AnyObject = deconstructData(data, &buffers)
+            return (SocketIOPacket(type: packet.type, data: deconstructedData, nsp: packet.nsp, attachments: buffers.count), buffers)
+        }
+        else {
+            return (packet, buffers)
+        }
+    }
+}
+
+public struct SocketIOPacket: Printable{
+    public var type: SocketIOPacketType
+    public var data: AnyObject?
+    public var nsp: String?
+    public var attachments: Int
+    
+    public init(type: SocketIOPacketType, data: AnyObject? = nil, nsp: String? = nil, attachments: Int = 0){
+        self.type = type
+        self.data = data
+        self.nsp = nsp
+        self.attachments = attachments
+    }
+    
+    public var description: String {
+        return "[\(type.description)][NS:\(nsp)][DATA<\(data)>]"
     }
 }
