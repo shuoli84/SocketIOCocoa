@@ -126,7 +126,7 @@ class SocketIOCocoaTests: XCTestCase {
         }
     }
 
-    func testBaseTransportURI() {
+    func testPollingTransportURI() {
         let transport = PollingTransport(
             host: "localhost", path: "/socket.io/", port: "8001", secure: false)
         
@@ -145,8 +145,26 @@ class SocketIOCocoaTests: XCTestCase {
         println(uri)
     }
     
+    func testWebsocketTransportURI() {
+        let transport = WebsocketTransport(
+            host: "localhost", path: "/socket.io/", port: "8001", secure: false)
+        
+        let uri = transport.uri()
+        var url = NSURL(string: uri)!
+        XCTAssertEqual("localhost", url.host!)
+        XCTAssertEqual(8001, url.port!)
+        XCTAssertEqual("/socket.io", url.path!)
+        XCTAssertEqual("ws", url.scheme!)
+        
+        let query : String = url.query!
+        let params : [String: String] = query.parametersFromQueryString()
+        XCTAssertEqual("3", params["EIO"]!)
+        XCTAssertEqual("websocket", params["transport"]!)
+        
+        println(uri)
+    }
     
-    func testBaseTransportOpen() {
+    func testPollingTransportOpen() {
         var expectation = self.expectationWithDescription("async request")
         let transport = PollingTransport(
             host: "localhost", path: "/socket.io/", port: "8001", secure: false)
@@ -190,6 +208,53 @@ class SocketIOCocoaTests: XCTestCase {
             EnginePacket(string: "hello world 1", type: .Message),
             EnginePacket(nsdata: Converter.nsstringToNSData("hello world 1"), type: .Message),
         ])
+        sleep(1)
+    }
+    
+    func testWebsocketTransport(){
+        var expectation = self.expectationWithDescription("async request")
+        let transport = WebsocketTransport(
+            host: "localhost", path: "/socket.io/", port: "8001", secure: false)
+        
+        class TestTransportDelegate: EngineTransportDelegate{
+            var packet: EnginePacket?
+            var expectation: XCTestExpectation
+            var dispatchQueue: dispatch_queue_t = {
+                return dispatch_queue_create("test queue", DISPATCH_QUEUE_SERIAL)
+                }()
+            
+            init(expectation: XCTestExpectation){
+                self.expectation = expectation
+            }
+            
+            private func transportOnClose(transport: Transport) {
+            }
+            private func transportOnError(transport: Transport, error: String, withDescription description: String) {
+                NSException(name: error, reason: description, userInfo: nil)
+            }
+            private func transportOnOpen(transport: Transport) {
+                self.expectation.fulfill()
+            }
+            private func transportOnPacket(transport: Transport, packet: EnginePacket) {
+                println(packet)
+                self.packet = packet
+                XCTAssert(packet.type == .Open)
+                self.expectation.fulfill()
+            }
+            private func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
+                return self.dispatchQueue
+            }
+        }
+        
+        var delegate = TestTransportDelegate(expectation: expectation)
+        transport.delegate = delegate
+        transport.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+        
+        transport.write([
+            EnginePacket(string: "hello world 1", type: .Message),
+            EnginePacket(nsdata: Converter.nsstringToNSData("hello world 1"), type: .Message),
+            ])
         sleep(1)
     }
     

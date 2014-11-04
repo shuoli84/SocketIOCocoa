@@ -507,6 +507,16 @@ public class BaseTransport: Transport {
         }
     }
     
+    func dispatchQueue() -> dispatch_queue_t {
+        if let delegate = self.delegate{
+            return delegate.transportDispatchQueue(self)
+        }
+        else{
+            // Default we run on main queue
+            return dispatch_get_main_queue()
+        }
+    }
+    
     public func open() {}
     public func close() {}
     public func pause() {}
@@ -577,16 +587,6 @@ public class PollingTransport : BaseTransport{
                     }
                 }
             }
-        }
-    }
-    
-    func dispatchQueue() -> dispatch_queue_t {
-        if let delegate = self.delegate{
-            return delegate.transportDispatchQueue(self)
-        }
-        else{
-            // Default we run on main queue
-            return dispatch_get_main_queue()
         }
     }
     
@@ -696,17 +696,89 @@ public class PollingTransport : BaseTransport{
     }
 }
 
-public class WebsocketTransport : BaseTransport{
+public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     // The name of the transport
-    override var name : String{
-        get { return "websocket" }
-    }
+    override var name : String{ get { return "websocket" }}
     
-    override public func open(){}
+    override public func open(){
+        dispatch_async(self.dispatchQueue(), { () -> Void in
+            if self.readyState == .Closed || self.readyState == .Init{
+                self.readyState = .Opening
+                
+                let uri = self.uri()
+                
+                if let nsurl = NSURL(string: uri) {
+                    var socket = Websocket(url: nsurl)
+                    socket.delegate = self
+                    socket.connect()
+                }
+                else{
+                    NSLog("Invalid url %s", uri)
+                }
+            }
+        })
+    }
     
     override public func close(){}
     
-    override public func write(packets: [EnginePacket]){}
+    override public func write(packets: [EnginePacket]){
+    }
+    
+    public func uri() -> String {
+        let schema = self.secure ? "wss" : "ws"
+        var query : [String: AnyObject] = [
+            "EIO": self.protocolVersion,
+            "transport": self.name,
+            "t": Int(NSDate().timeIntervalSince1970)
+        ]
+        
+        if let sid : String = self.sid {
+            query["sid"] = sid
+        }
+        
+        var port = ""
+        if self.port != "" && (self.port != "80" && schema == "ws") || (self.port != "443" && schema == "wss") {
+            port = ":\(self.port)"
+        }
+        
+        let queryString = query.urlEncodedQueryStringWithEncoding(NSUTF8StringEncoding)
+        let uri = "\(schema)://\(self.host)\(port)\(self.path)?\(queryString)"
+        return uri
+    }
+    
+    // MARK Websocket delegate
+    public func websocketDidConnect() {
+        dispatch_async(self.dispatchQueue()){
+            NSLog("Websocket transport connected")
+            self.onOpen()
+        }
+    }
+    
+    public func websocketDidDisconnect(error: NSError?) {
+        NSLog("Websocket disconnected")
+    }
+    
+    public func websocketDidReceiveData(data: NSData) {
+        NSLog("Received binary message %s", Converter.nsdataToByteArray(data).description)
+    }
+    
+    public func websocketDidReceiveMessage(text: String) {
+        dispatch_async(self.dispatchQueue()){
+            NSLog("Received test message \(text)")
+        }
+    }
+    
+    public func websocketDidWriteError(error: NSError?) {
+        NSLog("Websocket write error")
+    }
+    // END Websocket delegate
+    
+    public override func onOpen(){
+        self.readyState = .Open
+        if let delegate = self.delegate {
+            delegate.transportOnOpen(self)
+        }
+    }
 }
 
 
