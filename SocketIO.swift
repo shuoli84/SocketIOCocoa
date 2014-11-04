@@ -700,6 +700,9 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     // The name of the transport
     override var name : String{ get { return "websocket" }}
     
+    // The websocket instance
+    var websocket : Websocket?
+    
     override public func open(){
         dispatch_async(self.dispatchQueue(), { () -> Void in
             if self.readyState == .Closed || self.readyState == .Init{
@@ -711,6 +714,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                     var socket = Websocket(url: nsurl)
                     socket.delegate = self
                     socket.connect()
+                    self.websocket = socket
                 }
                 else{
                     NSLog("Invalid url %s", uri)
@@ -719,9 +723,24 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
         })
     }
     
-    override public func close(){}
+    override public func close(){
+        self.readyState = .Closing
+        self.websocket?.disconnect()
+        // Following logic located in websocketdelegate method diddisconnect
+    }
     
     override public func write(packets: [EnginePacket]){
+        dispatch_async(self.dispatchQueue()){
+            for packet in packets{
+                if packet.isBinary{
+                    self.websocket?.writeData(packet.encode())
+                }
+                else {
+                    // Check whether we should avoid the extra data->string encode and stream it out
+                    self.websocket?.writeString(Converter.nsdataToNSString(packet.encode()))
+                }
+            }
+        }
     }
     
     public func uri() -> String {
@@ -756,15 +775,26 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func websocketDidDisconnect(error: NSError?) {
         NSLog("Websocket disconnected")
+        dispatch_async(self.dispatchQueue()){
+            self.readyState = .Closed
+            self.websocket = nil
+            if let delegate = self.delegate {
+                delegate.transportOnClose(self)
+            }
+        }
     }
     
     public func websocketDidReceiveData(data: NSData) {
-        NSLog("Received binary message %s", Converter.nsdataToByteArray(data).description)
+        dispatch_async(self.dispatchQueue()){
+            NSLog("Received binary message \(data)")
+            self.onData(data)
+        }
     }
     
     public func websocketDidReceiveMessage(text: String) {
         dispatch_async(self.dispatchQueue()){
             NSLog("Received test message \(text)")
+            self.onData(Converter.nsstringToNSData(text))
         }
     }
     
@@ -777,6 +807,15 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
         self.readyState = .Open
         if let delegate = self.delegate {
             delegate.transportOnOpen(self)
+        }
+    }
+    
+    // The method is running on the queue
+    public override func onData(data: NSData){
+        let packet = EnginePacket(decodeFromData: data)
+        
+        if let delegate = self.delegate {
+            delegate.transportOnPacket(self, packet: packet)
         }
     }
 }

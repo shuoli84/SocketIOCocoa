@@ -237,9 +237,6 @@ class SocketIOCocoaTests: XCTestCase {
             }
             private func transportOnPacket(transport: Transport, packet: EnginePacket) {
                 println(packet)
-                self.packet = packet
-                XCTAssert(packet.type == .Open)
-                self.expectation.fulfill()
             }
             private func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
                 return self.dispatchQueue
