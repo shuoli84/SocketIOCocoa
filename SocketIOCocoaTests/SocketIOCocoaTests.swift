@@ -304,4 +304,21 @@ class SocketIOCocoaTests: XCTestCase {
         let data = packet.data as NSDictionary
         XCTAssert(Converter.nsdataToNSString(data.objectForKey("data") as NSData) == "hell")
     }
+    
+    func testSocketIOPacket(){
+        var socketPacket = SocketIOPacket(type: .Event, data: [
+            "what": "the"
+            ] as NSDictionary, id: "1231242", nsp: "chat")
+        XCTAssert(Converter.bytearrayToNSString(socketPacket.encodeAsString()) == "2/chat,1231242{\"what\":\"the\"}")
+        
+        socketPacket = SocketIOPacket(type: .Event, data: [
+            "what": "the",
+            "data": Converter.nsstringToNSData("hell"),
+            "array": [1,2, Converter.nsstringToNSData("great")]
+            ] as NSDictionary, id: "1231242", nsp: "chat")
+        
+        let results = socketPacket.encodeAsBinary()
+        println(results)
+        XCTAssert(3 == results.count)
+    }
 }

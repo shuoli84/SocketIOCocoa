@@ -1135,7 +1135,7 @@ public class EngineSocket: EngineTransportDelegate{
     /____/\____/\___/_/|_|\___/\__/___/\____/
 */
 
-public enum SocketIOPacketType: Int, Printable{
+public enum SocketIOPacketType: Byte, Printable{
     case Connect = 0, Disconnect, Event, Ack, Error, BinaryEvent, BinaryAck
     
     public var description: String {
@@ -1233,7 +1233,7 @@ public class BinaryParser {
         var buffers: [NSData] = []
         if let data: AnyObject = packet.data {
             let deconstructedData: AnyObject = deconstructData(data, &buffers)
-            return (SocketIOPacket(type: packet.type, data: deconstructedData, nsp: packet.nsp, attachments: buffers.count), buffers)
+            return (SocketIOPacket(type: packet.type, data: deconstructedData, nsp: packet.nsp, id: packet.id, attachments: buffers.count), buffers)
         }
         else {
             return (packet, buffers)
@@ -1243,7 +1243,7 @@ public class BinaryParser {
     public class func reconstructPacket(packet: SocketIOPacket, buffers: [NSData]) -> SocketIOPacket{
         if let data: AnyObject = packet.data {
             let constructedData: AnyObject = reconstructData(data, buffers)
-            return SocketIOPacket(type: packet.type, data: constructedData, nsp: packet.nsp, attachments: 0)
+            return SocketIOPacket(type: packet.type, data: constructedData, nsp: packet.nsp, id: packet.id, attachments: 0)
         }
         else{
             return packet
@@ -1255,16 +1255,61 @@ public struct SocketIOPacket: Printable{
     public var type: SocketIOPacketType
     public var data: AnyObject?
     public var nsp: String?
+    public var id: String?
     public var attachments: Int
     
-    public init(type: SocketIOPacketType, data: AnyObject? = nil, nsp: String? = nil, attachments: Int = 0){
+    public init(type: SocketIOPacketType, data: AnyObject? = nil, nsp: String? = nil, id: String? = nil, attachments: Int = 0){
         self.type = type
         self.data = data
         self.nsp = nsp
+        self.id = id
         self.attachments = attachments
     }
     
     public var description: String {
         return "[\(type.description)][NS:\(nsp)][DATA<\(data)>]"
+    }
+    
+    public func encodeAsString() -> [Byte]{
+        var encodeBuf = [Byte]()
+        encodeBuf.append(self.type.rawValue + ASCII._0.rawValue)
+        
+        if self.type == .BinaryEvent || self.type == .BinaryAck {
+            if self.attachments > 0{
+                encodeBuf += Converter.nsstringToByteArray(String(self.attachments) + "-")
+            }
+        }
+        
+        // If we have a namespace other than '/', append it followed by a ','
+        if let nsp = self.nsp {
+            if nsp != "/" {
+                encodeBuf += Converter.nsstringToByteArray((startsWith(nsp, "/") ? "" : "/") + nsp + ",")
+            }
+        }
+        
+        // Followed by id
+        if let id = self.id {
+            encodeBuf += Converter.nsstringToByteArray(id)
+        }
+        
+        if let data: AnyObject = self.data {
+            encodeBuf += Converter.jsonToByteArray(data)
+        }
+        
+        return encodeBuf
+    }
+    
+    // TODO Check how to void several layer of bytearray -> data
+    public func encodeAsBinary() -> [([Byte], Bool)]{
+        var results = [([Byte], Bool)]()
+        var (packet, buffers) = BinaryParser.deconstructPacket(self)
+        
+        var tuple = (packet.encodeAsString(), false)
+        results.append(tuple)
+            
+        for buffer in buffers {
+            results.append((Converter.nsdataToByteArray(buffer), true))
+        }
+        return results
     }
 }
