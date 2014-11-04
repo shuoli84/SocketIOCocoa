@@ -299,7 +299,7 @@ public class EngineParser {
         var output = NSMutableData()
         for packet in packets{
             let encoded = packet.encode()
-            var lengthBuf = [Byte]([1]) // 0 for string, 1 for binary, we only use 1 as we only support binary now
+            var lengthBuf = [Byte]([packet.isBinary ? 1 : 0])
             let bufLengthStr = String(encoded.length)
             
             for c in Converter.nsstringToByteArray(bufLengthStr) {

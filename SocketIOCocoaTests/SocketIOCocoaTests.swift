@@ -168,6 +168,7 @@ class SocketIOCocoaTests: XCTestCase {
                 
             }
             private func transportOnPacket(transport: Transport, packet: EnginePacket) {
+                println(packet)
                 self.packet = packet
                 XCTAssert(packet.type == .Open)
                 self.expectation.fulfill()
@@ -178,6 +179,12 @@ class SocketIOCocoaTests: XCTestCase {
         transport.delegate = delegate
         transport.open()
         self.waitForExpectationsWithTimeout(30, handler: nil)
+        
+        transport.write([
+            EnginePacket(string: "hello world 1", type: .Message),
+            EnginePacket(nsdata: Converter.nsstringToNSData("hello world 1"), type: .Message),
+        ])
+        sleep(1)
     }
     
     func testEngineSocket(){
