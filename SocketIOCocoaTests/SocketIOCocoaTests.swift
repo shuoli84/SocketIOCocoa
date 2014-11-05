@@ -317,7 +317,17 @@ class SocketIOCocoaTests: XCTestCase {
         var socketPacket = SocketIOPacket(type: .Event, data: [
             "what": "the"
             ] as NSDictionary, id: "1231242", nsp: "chat")
-        XCTAssert(Converter.bytearrayToNSString(socketPacket.encodeAsString()) == "2/chat,1231242{\"what\":\"the\"}")
+        var encodedString = socketPacket.encodeAsString()
+        XCTAssert(Converter.bytearrayToNSString(encodedString) == "2/chat,1231242{\"what\":\"the\"}")
+        
+        var decodedPacket = SocketIOPacket(decodedFromString: encodedString)
+        println(decodedPacket)
+        
+        XCTAssert(decodedPacket.type == .Event)
+        XCTAssert(decodedPacket.id == "1231242")
+        XCTAssert(decodedPacket.nsp == "/chat")
+        let data = decodedPacket.data as NSDictionary
+        XCTAssert(data.objectForKey("what") as NSString == "the")
         
         socketPacket = SocketIOPacket(type: .Event, data: [
             "what": "the",

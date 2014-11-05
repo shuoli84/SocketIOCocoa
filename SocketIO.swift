@@ -148,6 +148,7 @@ enum ASCII: Byte {
     case _0 = 48, _1, _2, _3, _4, _5, _6, _7, _8, _9
     case a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
+    case COMMA = 44, DASH = 45, BACKSLASH=47
 }
 
 /*
@@ -1266,6 +1267,70 @@ public struct SocketIOPacket: Printable{
         self.attachments = attachments
     }
     
+    public init(decodedFromString string: [Byte]){
+        var packetType = SocketIOPacketType(rawValue: string[0] - ASCII._0.rawValue)
+        var attachment: Int = 0
+        var nsp: String? = nil
+        var id: String? = nil
+        var data: AnyObject? = nil
+        
+        var offset = 1 // 1 byte for type
+        
+        if packetType == nil {
+            packetType = .Error
+        }
+        
+        // Parse the attachement count
+        if packetType == .BinaryEvent || packetType == .BinaryAck {
+            var attachmentBuf = [Byte]()
+            while offset < string.count && string[offset] != ASCII.DASH.rawValue {
+                attachmentBuf.append(string[offset++])
+            }
+            
+            // Even if string not able to parse, it will return 0
+            attachment = Converter.bytearrayToNSString(attachmentBuf).integerValue
+            
+            offset++ // Skip the '-'
+        }
+        
+        
+        // Parse the namespace
+        if offset < string.count && string[offset] == ASCII.BACKSLASH.rawValue {
+            // WE have a namespace
+            var nspBuffer = [Byte]()
+            
+            while offset < string.count && string[offset] != ASCII.COMMA.rawValue {
+                nspBuffer.append(string[offset++])
+            }
+            
+            nsp = Converter.bytearrayToNSString(nspBuffer)
+            
+            offset++ // Skip the ','
+        }
+        
+        
+        // Parse the id
+        if offset < string.count && string[offset] >= ASCII._0.rawValue && string[offset] <= ASCII._9.rawValue {
+            var idBuffer = [Byte]()
+            
+            while offset < string.count && string[offset] >= ASCII._0.rawValue && string[offset] <= ASCII._9.rawValue {
+                idBuffer.append(string[offset++])
+            }
+            
+            id = Converter.bytearrayToNSString(idBuffer)
+        }
+        
+        // Parse the body
+        if offset < string.count {
+            let bodyBuffer = [Byte](string[offset..<string.count])
+            if let json = Converter.bytearrayToJSON(bodyBuffer) {
+                data = json
+            }
+        }
+       
+        self.init(type: packetType!, data: data, nsp: nsp, id: id, attachments: attachment)
+    }
+    
     public var description: String {
         return "[\(type.description)][NS:\(nsp)][DATA<\(data)>]"
     }
@@ -1312,4 +1377,6 @@ public struct SocketIOPacket: Printable{
         }
         return results
     }
+    
+
 }
