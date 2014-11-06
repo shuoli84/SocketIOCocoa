@@ -360,6 +360,11 @@ class SocketIOCocoaTests: XCTestCase {
         else{
             XCTAssert(false, "packet not reconstructed")
         }
+        
+        socketPacket = SocketIOPacket(type: .Event, data: ["message", "Hello world"] as NSArray, id: "1231242", nsp: "chat")
+        let (encoded2, _) = socketPacket.encode()
+        let encodedStr = Converter.bytearrayToNSString(encoded2)
+        XCTAssert("2/chat,1231242[\"message\",\"Hello world\"]" == encodedStr)
     }
     
     func testSocketIOClient(){
@@ -417,5 +422,60 @@ class SocketIOCocoaTests: XCTestCase {
         expectation = self.expectationWithDescription("Wait for reconnect")
         delegate.reconnectExpectation = expectation
         self.waitForExpectationsWithTimeout(10, handler: nil)
+    }
+    
+    func testSocketIOClientReceive(){
+        let uri = "http://localhost:8001/socket.io/"
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 3)
+        XCTAssert(client.uri == uri)
+        
+        class ClientDelegate: SocketIOClientDelegate {
+            var expectation: XCTestExpectation?
+            
+            init(expectation: XCTestExpectation){
+                self.expectation = expectation
+            }
+            
+            private func clientOnClose(client: SocketIOClient) {
+                NSLog("Client on Close")
+            }
+            
+            private func clientOnConnectionTimeout(client: SocketIOClient) {
+                NSLog("Client on connect timeout")
+            }
+            
+            private func clientOnError(client: SocketIOClient, error: String, description: String) {
+                NSLog("Client on Erorr %s [%s]", error, description)
+            }
+            private func clientOnOpen(client: SocketIOClient) {
+                NSLog("Client on Open")
+            }
+            private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {
+                NSLog("Client got data")
+                self.expectation?.fulfill()
+            }
+            private func clientReconnectionError(client: SocketIOClient, error: String, description: String) {
+                NSLog("Client reconnection Error %s [%s]", error, description)
+            }
+            private func clientReconnectionFailed(client: SocketIOClient) {
+                NSLog("Client reconnection failed")
+            }
+            private func clientReconnected(client: SocketIOClient) {
+            }
+        }
+        
+        var expectation = self.expectationWithDescription("Client open expectation")
+        var delegate = ClientDelegate(expectation: expectation)
+        client.delegate = delegate
+        client.open()
+        
+        self.waitForExpectationsWithTimeout(10, handler: nil)
+    }
+    
+    func testSocketIOSocket(){
+        let uri = "http://localhost:8001/socket.io/"
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 3)
+        var socket = SocketIOSocket(client: client, namespace: "chat", autoConnect: false)
+        
     }
 }

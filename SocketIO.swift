@@ -845,9 +845,6 @@ public protocol EngineSocketDelegate: class{
     // Called when the socket state is Closed
     func socketOnClose(socket: EngineSocket)
     
-    // Called when a new packet received
-    func socketOnPacket(socket: EngineSocket, packet: EnginePacket)
-   
     // Called when there is a message decoded
     func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool)
     
@@ -990,11 +987,7 @@ public class EngineSocket: EngineTransportDelegate{
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         NSLog("[EngineSocket] Received one packet")
         if self.readyState == .Open || self.readyState == .Opening{
-            NSLog("[EngineSocket] Receive: [\(packet.type.description)")
-            
-            if let delegate = self.delegate {
-                delegate.socketOnPacket(self, packet: packet)
-            }
+            NSLog("[EngineSocket] Receive: [\(packet.description)]")
             
             switch packet.type{
             case .Open:
@@ -1122,7 +1115,14 @@ public class EngineSocket: EngineTransportDelegate{
     send data
     */
     func send(data: NSData, callback: (()->Void)? = nil){
-        self.send(.Message, data: Converter.nsdataToByteArray(data), isBinary: false, callback: callback)
+        self.send(.Message, data: Converter.nsdataToByteArray(data), isBinary: true, callback: callback)
+    }
+    
+    /**
+    Send text packet
+    */
+    func send(text: [Byte], callback: (()->Void)? = nil){
+        self.send(.Message, data: text, isBinary: false, callback: callback)
     }
     
     // send packet and data with a callback
@@ -1596,15 +1596,39 @@ public class SocketIOClient: EngineSocketDelegate {
         }
     }
     
+    // TODO Check whether we need to add the callback
+    public func packet(packet: SocketIOPacket){
+        NSLog("[SocketIOClient][\(self.readyState.description)] Sending packet \(packet.description)")
+        
+        let (encoded, buffers) = packet.encode()
+        
+        self.engineSocket?.send(encoded, callback: nil)
+        for buffer in buffers{
+            self.engineSocket?.send(buffer, callback: nil)
+        }
+    }
+    
+    // Create socket object attached to a namespace
+    public func socket(namespace: String) -> SocketIOSocket{
+        var nsp = startsWith(namespace, "/") ? namespace : "/\(namespace)"
+        
+        if let socket = self.namespaces[nsp] {
+            return socket
+        }
+        
+        var socket = SocketIOSocket(client: self, namespace: nsp, autoConnect: self.autoConnect)
+        self.namespaces[nsp] = socket
+        
+        return socket
+    }
+    
     // EngineSocketDelegate
     public func socketOnOpen(socket: EngineSocket) {
-        //
-        // Here locate a bug. The dispatch async not called!!! Could because that the queue is not empty or the queue
-        // blocked, CHeck this!!
-        //
-        NSLog("Socket opened")
         dispatch_async(self.dispatchQueue){
             [unowned self] () -> Void in
+            
+            self.readyState = .Open
+            
             if self.reconnecting {
                 NSLog("[SocketIOClient] Reconnection succeeded")
                 self.reconnecting = false
@@ -1613,8 +1637,12 @@ public class SocketIOClient: EngineSocketDelegate {
             }
             else {
                 NSLog("[SocketIOClient][\(self.readyState.description) Underlying engine socket connected")
-                self.readyState = .Open
                 self.delegate?.clientOnOpen(self)
+            }
+            
+            // Go through all namespaces and send out Connect message
+            for (namespace, socket) in self.namespaces{
+                socket.connect()
             }
         }
     }
@@ -1630,10 +1658,19 @@ public class SocketIOClient: EngineSocketDelegate {
         }
     }
     
-    public func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
-    }
-    
     public func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
+        NSLog("[SocketIOClient[\(self.readyState.description)] got packet from underlying socket")
+        
+        
+        var socketIOPacket: SocketIOPacket?
+        
+        if isBinary{
+            socketIOPacket = self.decoder.addBuffer(Converter.bytearrayToNSData(data))
+        }
+        else{
+            socketIOPacket = self.decoder.addString(data)
+        }
+        
         var packet: SocketIOPacket?
         if isBinary {
             packet = self.decoder.addBuffer(Converter.bytearrayToNSData(data))
@@ -1642,8 +1679,18 @@ public class SocketIOClient: EngineSocketDelegate {
             packet = self.decoder.addString(data)
         }
         
-        if let p = packet {
-            self.delegate?.clientOnPacket(self, packet: p)
+        if socketIOPacket != nil {
+            self.delegate?.clientOnPacket(self, packet: socketIOPacket!)
+            
+            if let namespace = socketIOPacket?.nsp {
+                if self.namespaces[namespace] != nil{
+                    var socket = self.socket(namespace)
+                    socket.receivePacket(socketIOPacket!)
+                }
+                else{
+                    NSLog("[SocketIOClient][\(self.readyState.description)] Unknown namespace \(namespace)")
+                }
+            }
         }
     }
     
@@ -1658,7 +1705,8 @@ public class SocketIOClient: EngineSocketDelegate {
                 self.reconnect()
             }
             else{
-                
+                NSLog("[SocketIOClient][\(self.readyState.description)] Underlying engine socket raised error \(error) [\(description)]")
+                self.delegate?.clientOnError(self, error: error, description: description)
             }
         }
     }
@@ -1667,5 +1715,81 @@ public class SocketIOClient: EngineSocketDelegate {
     
 }
 
+public protocol SocketIOSocketDelegate {
+    // Called when the socket received a low level packet
+    func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
+    
+    // Called when the socket received an event
+    func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
+}
+
 public class SocketIOSocket{
+    unowned var client: SocketIOClient
+    var namespace: String
+    var messageIdCounter: Int = 0
+    var acknowledgeCallbacks: [Int: (()->Void)] = [:]
+    var receiveBuffer: [SocketIOPacket] = []
+    var sendBuffer: [SocketIOPacket] = []
+    var connected = false
+    var autoConnect: Bool
+    
+    public var delegate: SocketIOSocketDelegate?
+    
+    public init(client: SocketIOClient, namespace: String, autoConnect: Bool = false){
+        self.client = client
+        self.namespace = startsWith(namespace, "/") ? namespace : "/\(namespace)"
+        self.autoConnect = autoConnect
+    }
+    
+    public func open(){
+        if self.connected {
+            return
+        }
+        
+        if self.client.readyState == .Open {
+            self.connect()
+        }
+        else{
+            self.client.open()
+        }
+    }
+    
+    public func connect(){
+        NSLog("[SocketIOSocket][\(self.namespace)][\(self.connected)] connect to namespace")
+        self.packet(.Connect)
+    }
+    
+    public func packet(type: SocketIOPacketType, data: AnyObject? = nil){
+        let socketPacket = SocketIOPacket(type: type, data: data, nsp: self.namespace)
+        self.client.packet(socketPacket)
+    }
+    
+    public func event(event: String, data: AnyObject?){
+        var packetData: NSMutableArray = []
+        packetData.insertObject(event, atIndex: 0)
+        if data != nil {
+            packetData.insertObject(data!, atIndex: 1)
+        }
+        
+        self.packet(.Event, data: packetData)
+    }
+    
+    public func receivePacket(packet: SocketIOPacket){
+        self.delegate?.socketOnPacket(self, packet: packet)
+        
+        if var dataArray = packet.data? as? NSArray {
+            if dataArray.count > 0 {
+                let event: NSString = dataArray[0] as NSString
+                if dataArray.count > 1{
+                    self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
+                }
+                else{
+                    self.delegate?.socketOnEvent(self, event: event, data: nil)
+                }
+            }
+        }
+        else{
+            NSLog("The data is not a array, not able to get the event name, ignore")
+        }
+    }
 }
