@@ -334,18 +334,17 @@ class SocketIOCocoaTests: XCTestCase {
             "array": [1,2, Converter.nsstringToNSData("great")]
             ] as NSDictionary, id: "1231242", nsp: "chat")
         
-        let results = socketPacket.encode()
-        XCTAssert(3 == results.count)
+        let (encoded, buffers) = socketPacket.encode()
+        XCTAssert(2 == buffers.count)
         
         var decoder = SocketIOPacketDecoder()
         
-        let binaryPacket = SocketIOPacket(decodedFromString: results[0].0)
+        let binaryPacket = SocketIOPacket(decodedFromString: encoded)
         decoder.packetToBeReConstructed = binaryPacket
         var flag = false
         var decodedBinaryPacket: SocketIOPacket?
-        for i in 1..<results.count{
-            let d = Converter.bytearrayToNSData(results[i].0)
-            decodedBinaryPacket = decoder.addBuffer(d)
+        for data in buffers{
+            decodedBinaryPacket = decoder.addBuffer(data)
             if decodedBinaryPacket != nil{
                 break;
             }
@@ -353,7 +352,8 @@ class SocketIOCocoaTests: XCTestCase {
         
         if let p = decodedBinaryPacket{
             XCTAssert(p.type == .BinaryEvent)
-            XCTAssert(p.encode().count == 3)
+            let (encoded, buffers) = p.encode()
+            XCTAssert(buffers.count == 2)
         }
         else{
             XCTAssert(false, "packet not reconstructed")

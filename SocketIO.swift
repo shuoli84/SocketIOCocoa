@@ -1365,17 +1365,10 @@ public struct SocketIOPacket: Printable{
     }
     
     // TODO Check how to void several layer of bytearray -> data
-    public func encode() -> [([Byte], Bool)]{
-        var results = [([Byte], Bool)]()
+    public func encode() -> ([Byte], [NSData]){
         var (packet, buffers) = BinaryParser.deconstructPacket(self)
-        
-        var tuple = (packet.encodeAsString(), false)
-        results.append(tuple)
-            
-        for buffer in buffers {
-            results.append((Converter.nsdataToByteArray(buffer), true))
-        }
-        return results
+        var encodedPacket = packet.encodeAsString()
+        return (encodedPacket, buffers)
     }
 }
 
