@@ -1380,20 +1380,23 @@ public struct SocketIOPacket: Printable{
 }
 
 public class SocketIOPacketDecoder {
-    // The reconstruct buffers
+    // The buffers for the packet needs reconstructed
     public var buffers: [NSData] = []
     
     // The packet which needs to be reconstructed
-    public var reconstructPacket: SocketIOPacket? = nil
+    public var packetToBeReConstructed: SocketIOPacket? = nil
     
-    public func takeBinaryData(data: NSData) -> SocketIOPacket? {
+    public init(){}
+    
+    public func addBuffer(data: NSData) -> SocketIOPacket? {
         self.buffers.append(data)
         
-        if let packet = self.reconstructPacket {
-            if buffers.count == packet.attachments {
-                self.buffers.removeAll(keepCapacity: true)
-                self.reconstructPacket = nil
-                return BinaryParser.reconstructPacket(packet, buffers: self.buffers)
+        if let packet = self.packetToBeReConstructed {
+            if self.buffers.count == packet.attachments {
+                self.packetToBeReConstructed = nil
+                let buffers = self.buffers
+                self.buffers = []
+                return BinaryParser.reconstructPacket(packet, buffers: buffers)
             }
         }
         return nil
