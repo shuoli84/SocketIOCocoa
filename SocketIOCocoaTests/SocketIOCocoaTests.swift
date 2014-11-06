@@ -416,7 +416,6 @@ class SocketIOCocoaTests: XCTestCase {
         
         expectation = self.expectationWithDescription("Wait for reconnect")
         delegate.reconnectExpectation = expectation
-        self.waitForExpectationsWithTimeout(5, handler: nil)
-        sleep(5)
+        self.waitForExpectationsWithTimeout(10, handler: nil)
     }
 }

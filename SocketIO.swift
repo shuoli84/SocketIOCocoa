@@ -576,7 +576,6 @@ public class PollingTransport : BaseTransport{
         self.pollingRequest = request(.GET, uri)
         .response { (request, response, data, error) -> Void in
             // Consider dispatch to the same queue
-            NSLog("Response get out of dispatch queue")
             dispatch_async(self.dispatchQueue()){ ()-> Void in
                 NSLog("Response get")
                 
@@ -612,7 +611,7 @@ public class PollingTransport : BaseTransport{
     }
     
     public override func onData(data: NSData) {
-        NSLog("polling got data %s", Converter.nsdataToByteArray(data).description)
+        NSLog("polling got data \(Converter.nsdataToByteArray(data).description)")
         
         let packets = EngineParser.decodePayload(data)
         
@@ -659,7 +658,7 @@ public class PollingTransport : BaseTransport{
     
     override public func write(packets: [EnginePacket]){
         if self.readyState == .Open{
-            NSLog("Send %d packets out", packets.count)
+            NSLog("Send \(packets.count) packets out")
             self.writable = false
             let encoded = EngineParser.encodePayload(packets)
             
@@ -732,7 +731,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                     self.websocket = socket
                 }
                 else{
-                    NSLog("Invalid url %s", uri)
+                    NSLog("Invalid url \(uri)")
                 }
             }
         })
@@ -991,7 +990,7 @@ public class EngineSocket: EngineTransportDelegate{
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         NSLog("[EngineSocket] Received one packet")
         if self.readyState == .Open || self.readyState == .Opening{
-            NSLog("[EngineSocket] Receive: [%s]", packet.type.description)
+            NSLog("[EngineSocket] Receive: [\(packet.type.description)")
             
             if let delegate = self.delegate {
                 delegate.socketOnPacket(self, packet: packet)
@@ -1036,7 +1035,7 @@ public class EngineSocket: EngineTransportDelegate{
             }
         }
         else{
-            NSLog("packet received with socket readyState [%s]", self.readyState.description)
+            NSLog("packet received with socket readyState [\(self.readyState.description)]")
         }
     }
     
@@ -1044,13 +1043,13 @@ public class EngineSocket: EngineTransportDelegate{
     
     public func transportOnClose(transport: Transport) {
         if self.readyState == .Closing {
-            NSLog("[EngineSocket][%s] The transport closed as expected", self.readyState.description)
+            NSLog("[EngineSocket][\(self.readyState.description)] The transport closed as expected")
             
             self.readyState = .Closed
             self.delegate?.socketOnClose(self)
         }
         else{
-            NSLog("[EngineSocket][%s] The transport closed unexpected", self.readyState.description)
+            NSLog("[EngineSocket][\(self.readyState.description)] The transport closed unexpected")
             self.delegate?.socketOnClose(self)
         }
     }
@@ -1138,7 +1137,7 @@ public class EngineSocket: EngineTransportDelegate{
                 return
             }
             
-            NSLog("Flushing %d packets", self.writeQueue.count)
+            NSLog("Flushing \(self.writeQueue.count) packets")
             
             // LOCK HERE
             let packets = self.writeQueue
@@ -1539,7 +1538,7 @@ public class SocketIOClient: EngineSocketDelegate {
     }
     
     public func open(){
-        NSLog("[SocketIOClient] ready state: %s", self.readyState.description)
+        NSLog("[SocketIOClient] ready state: \(self.readyState.description)")
         if self.readyState == .Open || self.readyState == .Opening {
             return
         }
@@ -1553,7 +1552,7 @@ public class SocketIOClient: EngineSocketDelegate {
         self.engineSocket!.open()
         
         if self.timeout != 0 {
-            NSLog("connect attempt will timeout after %d seconds", self.timeout)
+            NSLog("connect attempt will timeout after \(self.timeout) seconds")
             
             self.delay(Double(self.timeout)){
                 [unowned self]() -> Void in
@@ -1582,7 +1581,7 @@ public class SocketIOClient: EngineSocketDelegate {
         }
         else{
             let delay = min(self.attempts * self.reconnectDelay, self.reconnectDelayMax)
-            NSLog("Will wait %d seconds before reconnect", delay)
+            NSLog("Will wait \(delay) seconds before reconnect")
             
             self.delay(Double(delay)){
                 [unowned self] ()->Void in
@@ -1590,7 +1589,8 @@ public class SocketIOClient: EngineSocketDelegate {
                     return
                 }
                 
-                NSLog("attempting to reconnect")
+                self.reconnecting = true
+                NSLog("[SocketIOClient] attempting to reconnect")
                 self.open()
             }
         }
@@ -1612,6 +1612,7 @@ public class SocketIOClient: EngineSocketDelegate {
                 self.delegate?.clientReconnected(self)
             }
             else {
+                NSLog("[SocketIOClient][\(self.readyState.description) Underlying engine socket connected")
                 self.readyState = .Open
                 self.delegate?.clientOnOpen(self)
             }
@@ -1650,7 +1651,7 @@ public class SocketIOClient: EngineSocketDelegate {
         dispatch_async(self.dispatchQueue){
             [unowned self] () -> Void in
             if self.reconnecting {
-                NSLog("Reconnect failed with error: %s [%s]", error, description)
+                NSLog("Reconnect failed with error: \(error) [\(description)]")
                 
                 self.delegate?.clientReconnectionError(self, error: error, description: description)
                 self.reconnecting = false
