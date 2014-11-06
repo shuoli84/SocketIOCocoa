@@ -967,6 +967,10 @@ public class EngineSocket: EngineTransportDelegate{
         }
     }
     
+    public func close(){
+        // TODO FIX ME
+    }
+    
     // EngineTransportDelegate
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         NSLog("[EngineSocket] Received one packet")
@@ -1381,6 +1385,17 @@ public class SocketIOPacketDecoder {
     
     public init(){}
     
+    public func addString(data: [Byte]) -> SocketIOPacket? {
+        let decoded = SocketIOPacket(decodedFromString: data)
+        if decoded.type == .BinaryEvent || decoded.type == .BinaryAck {
+            if decoded.attachments > 0{
+                self.packetToBeReConstructed = decoded
+                return nil
+            }
+        }
+        return decoded
+    }
+    
     public func addBuffer(data: NSData) -> SocketIOPacket? {
         self.buffers.append(data)
         
@@ -1394,4 +1409,160 @@ public class SocketIOPacketDecoder {
         }
         return nil
     }
+}
+
+public protocol SocketIOClientDelegate {
+    func clientOnOpen(client: SocketIOClient)
+    func clientOnClose(client: SocketIOClient)
+    func clientOnConnectionTimeout(client: SocketIOClient)
+    func clientOnError(client: SocketIOClient, error: String, description: String)
+    func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket)
+}
+
+public enum SocketIOClientReadyState: Int, Printable {
+    case Open, Opening, Closed
+    
+    public var description: String {
+        switch self{
+        case .Open: return "Open"
+        case .Opening: return "Opening"
+        case .Closed: return "Closed"
+        }
+    }
+}
+
+public class SocketIOClient: EngineSocketDelegate {
+    public var uri: String
+    var transports: [String] = []
+    var readyState: SocketIOClientReadyState = .Closed
+    var autoConnect: Bool
+    var namespaces: [String: SocketIOSocket] = [:]
+    var connectedSockets: [SocketIOSocket] = []
+    
+    var _reconnect: Bool
+    
+    // How many attempts to reconnect. nil for infinite
+    var reconnectAttempts: Int?
+    
+    var reconnectDelay: Int
+    var reconnectDelayMax: Int
+    var timeout: Int
+    
+    var reconnecting = false
+    var attempts: Int = 0
+    var engineSocket: EngineSocket?
+    var decoder: SocketIOPacketDecoder
+    var skipReconnect = false
+    
+    // Flag indicate whether we already did reconnect on open
+    var openReconnectPerformed: Bool = true
+    
+    public var delegate: SocketIOClientDelegate?
+    
+    var dispatchQueue: dispatch_queue_t = {
+        return dispatch_queue_create("com.menic.SocketIOClient-queue", DISPATCH_QUEUE_SERIAL)
+    }()
+    
+    public init(uri: String, transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
+        reconnect: Bool = true, reconnectAttempts: Int? = nil, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
+        timeout: Int = 30){
+            self.uri = uri
+            self.transports = transports
+            self.autoConnect = autoConnect
+            self._reconnect = reconnect
+            self.reconnectAttempts = reconnectAttempts
+            self.reconnectDelay = reconnectDelay
+            self.reconnectDelayMax = reconnectDelayMax
+            self.timeout = timeout
+            self.decoder = SocketIOPacketDecoder()
+    }
+    
+    
+    func delay(delay:Double, closure:()->()) {
+        dispatch_after(
+            dispatch_time(
+                DISPATCH_TIME_NOW,
+                Int64(delay * Double(NSEC_PER_SEC))
+            ),
+            self.dispatchQueue, closure)
+    }
+    
+    public func sendAll(event: String, data: AnyObject?){
+        
+    }
+    
+    func maybeReconnectOnOpen(){
+        if !self.openReconnectPerformed && !self.reconnecting && self._reconnect && self.attempts == 0{
+            self.openReconnectPerformed = true
+            self.reconnect()
+        }
+    }
+    
+    public func open(){
+        NSLog("[SocketIOClient] ready state: %s", self.readyState.description)
+        if self.readyState == .Open || self.readyState == .Opening {
+            return
+        }
+        
+        NSLog("[SocketIOClient] Opening")
+        
+        self.engineSocket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: self.transports, upgrade: true, config: [:])
+        
+        self.engineSocket!.delegate = self
+        self.readyState = .Opening
+        self.engineSocket!.open()
+        
+        if self.timeout != 0 {
+            NSLog("connect attempt will timeout after %d seconds", self.timeout)
+            
+            self.delay(Double(self.timeout)){
+                [unowned self]() -> Void in
+                if self.readyState != .Open {
+                    NSLog("[SocketIOClient] connect timeout")
+                    self.engineSocket?.delegate = nil
+                    self.engineSocket?.close()
+                    
+                    self.delegate?.clientOnConnectionTimeout(self)
+                }
+            }
+        }
+        //TODO add timeout checking
+    }
+    
+    func reconnect(){
+        
+    }
+    
+    // EngineSocketDelegate
+    public func socketOnOpen(socket: EngineSocket) {
+        self.readyState = .Open
+        self.delegate?.clientOnOpen(self)
+    }
+    
+    public func socketOnClose(socket: EngineSocket) {
+        
+    }
+    
+    public func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
+    }
+    
+    public func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
+        var packet: SocketIOPacket?
+        if isBinary {
+            packet = self.decoder.addBuffer(Converter.bytearrayToNSData(data))
+        }
+        else {
+            packet = self.decoder.addString(data)
+        }
+        
+        if let p = packet {
+            self.delegate?.clientOnPacket(self, packet: p)
+        }
+    }
+    
+    // End of EngineSocketDelegate
+    
+}
+
+public class SocketIOSocket{
 }

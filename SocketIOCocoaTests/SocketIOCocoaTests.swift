@@ -359,4 +359,32 @@ class SocketIOCocoaTests: XCTestCase {
             XCTAssert(false, "packet not reconstructed")
         }
     }
+    
+    func testSocketIOClient(){
+        let uri = "http://localhost:8001/socket.io/"
+        var client = SocketIOClient(uri: uri, reconnect: true)
+        XCTAssert(client.uri == uri)
+        
+        class ClientDelegate: SocketIOClientDelegate {
+            var expectation: XCTestExpectation
+            
+            init(expectation: XCTestExpectation){
+                self.expectation = expectation
+            }
+            
+            private func clientOnClose(client: SocketIOClient) { }
+            
+            private func clientOnConnectionTimeout(client: SocketIOClient) { }
+            private func clientOnError(client: SocketIOClient, error: String, description: String) {}
+            private func clientOnOpen(client: SocketIOClient) {
+                self.expectation.fulfill()
+            }
+            private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {}
+        }
+        
+        var expectation = self.expectationWithDescription("Client open expectation")
+        client.delegate = ClientDelegate(expectation: expectation)
+        client.open()
+        self.waitForExpectationsWithTimeout(10, handler: nil)
+    }
 }
