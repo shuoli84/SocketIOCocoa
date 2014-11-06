@@ -278,6 +278,8 @@ class SocketIOCocoaTests: XCTestCase {
             
             private func socketOnOpen(socket: EngineSocket) { }
             private func socketOnClose(socket: EngineSocket) { }
+            private func socketOnError(socket: EngineSocket, error: String, description: String) {
+            }
         }
         
         var delegate = TestSocketDelegate(expectation: expectation)
@@ -362,29 +364,59 @@ class SocketIOCocoaTests: XCTestCase {
     
     func testSocketIOClient(){
         let uri = "http://localhost:8001/socket.io/"
-        var client = SocketIOClient(uri: uri, reconnect: true)
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 3)
         XCTAssert(client.uri == uri)
         
         class ClientDelegate: SocketIOClientDelegate {
-            var expectation: XCTestExpectation
+            var expectation: XCTestExpectation?
+            var reconnectExpectation: XCTestExpectation?
             
             init(expectation: XCTestExpectation){
                 self.expectation = expectation
             }
             
-            private func clientOnClose(client: SocketIOClient) { }
+            private func clientOnClose(client: SocketIOClient) {
+                NSLog("Client on Close")
+            }
             
-            private func clientOnConnectionTimeout(client: SocketIOClient) { }
-            private func clientOnError(client: SocketIOClient, error: String, description: String) {}
+            private func clientOnConnectionTimeout(client: SocketIOClient) {
+                NSLog("Client on connect timeout")
+            }
+            
+            private func clientOnError(client: SocketIOClient, error: String, description: String) {
+                NSLog("Client on Erorr %s [%s]", error, description)
+            }
             private func clientOnOpen(client: SocketIOClient) {
-                self.expectation.fulfill()
+                NSLog("Client on Open")
+                self.expectation?.fulfill()
+                self.expectation = nil // prevent refulfill
             }
             private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {}
+            private func clientReconnectionError(client: SocketIOClient, error: String, description: String) {
+                NSLog("Client reconnection Error %s [%s]", error, description)
+            }
+            private func clientReconnectionFailed(client: SocketIOClient) {
+                NSLog("Client reconnection failed")
+            }
+            private func clientReconnected(client: SocketIOClient) {
+                NSLog("Client reconnected!!")
+                self.reconnectExpectation?.fulfill()
+            }
         }
         
         var expectation = self.expectationWithDescription("Client open expectation")
-        client.delegate = ClientDelegate(expectation: expectation)
+        var delegate = ClientDelegate(expectation: expectation)
+        client.delegate = delegate
         client.open()
         self.waitForExpectationsWithTimeout(10, handler: nil)
+        
+        // Test the reconnection
+        // Close the underlying engine socket
+        client.engineSocket?.close()
+        
+        expectation = self.expectationWithDescription("Wait for reconnect")
+        delegate.reconnectExpectation = expectation
+        self.waitForExpectationsWithTimeout(5, handler: nil)
+        sleep(5)
     }
 }

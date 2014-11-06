@@ -568,12 +568,15 @@ public class PollingTransport : BaseTransport{
     
     // Poll
     func poll(){
-        NSLog("polling")
-        self.polling = true
+        let uri = self.uri()
         
-        self.pollingRequest = request(.GET, self.uri())
+        NSLog("polling \(uri)")
+        
+        self.polling = true
+        self.pollingRequest = request(.GET, uri)
         .response { (request, response, data, error) -> Void in
             // Consider dispatch to the same queue
+            NSLog("Response get out of dispatch queue")
             dispatch_async(self.dispatchQueue()){ ()-> Void in
                 NSLog("Response get")
                 
@@ -585,7 +588,9 @@ public class PollingTransport : BaseTransport{
                     }
                 }
                 else{
-                    self.onError("error: Poll request failed", description: response!.description)
+                    if let e = error {
+                        self.onError("error: Poll request failed \(e)", description: e.description)
+                    }
                 }
                 
                 if self.readyState == .Open{
@@ -846,6 +851,9 @@ public protocol EngineSocketDelegate: class{
    
     // Called when there is a message decoded
     func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool)
+    
+    // Called when there is an error occured
+    func socketOnError(socket: EngineSocket, error: String, description: String)
 }
 
 enum EngineSocketReadyState : Int, Printable{
@@ -955,20 +963,28 @@ public class EngineSocket: EngineTransportDelegate{
     
     public func open(){
         assert(transports.count != 0)
-        self.readyState = .Opening
-        
-        let transportName = $.first(self.transports)!
-        if var transport = self.createTransport(transportName){
-            self.setTransport(&transport)
-            transport.open()
-        }
-        else{
-            NSLog("Not able to create transport")
+        dispatch_async(self.queue){
+            [unowned self] () -> Void in
+            self.readyState = .Opening
+            
+            let transportName = $.first(self.transports)!
+            if var transport = self.createTransport(transportName){
+                self.setTransport(&transport)
+                transport.open()
+            }
+            else{
+                NSLog("Not able to create transport")
+            }
         }
     }
     
     public func close(){
-        // TODO FIX ME
+        // Trigger the close the underlying transport
+        dispatch_async(self.queue){
+            [unowned self] () -> Void in
+            self.readyState = .Closing
+            self.transport?.close()
+        }
     }
     
     // EngineTransportDelegate
@@ -1026,7 +1042,18 @@ public class EngineSocket: EngineTransportDelegate{
     
     public func transportOnError(transport: Transport, error: String, withDescription description: String) { }
     
-    public func transportOnClose(transport: Transport) { }
+    public func transportOnClose(transport: Transport) {
+        if self.readyState == .Closing {
+            NSLog("[EngineSocket][%s] The transport closed as expected", self.readyState.description)
+            
+            self.readyState = .Closed
+            self.delegate?.socketOnClose(self)
+        }
+        else{
+            NSLog("[EngineSocket][%s] The transport closed unexpected", self.readyState.description)
+            self.delegate?.socketOnClose(self)
+        }
+    }
     
     public func transportOnOpen(transport: Transport) { }
     
@@ -1101,7 +1128,7 @@ public class EngineSocket: EngineTransportDelegate{
     
     // send packet and data with a callback
     func send(packetType: PacketType, data: [Byte]? = nil, isBinary: Bool, callback: (()->Void)? = nil){
-        let packet = EnginePacket(data: data, type:packetType, isBinary: false) // TODO FIX ME
+        let packet = EnginePacket(data: data, type:packetType, isBinary: isBinary)
         self.packet(packet, callback: callback)
     }
     
@@ -1126,9 +1153,12 @@ public class EngineSocket: EngineTransportDelegate{
     }
     
     func packet(packet: EnginePacket, callback: (()->Void)?){
-        self.writeQueue.append(packet)
-        self.writeCallbackQueue.append(callback)
-        self.flush()
+        dispatch_async(self.queue){
+            [unowned self] () -> Void in
+            self.writeQueue.append(packet)
+            self.writeCallbackQueue.append(callback)
+            self.flush()
+        }
     }
 }
 
@@ -1415,6 +1445,16 @@ public protocol SocketIOClientDelegate {
     func clientOnOpen(client: SocketIOClient)
     func clientOnClose(client: SocketIOClient)
     func clientOnConnectionTimeout(client: SocketIOClient)
+    
+    // Called when reconnect failed. E.g exceed the max attempts
+    func clientReconnectionFailed(client: SocketIOClient)
+    
+    // Called when any error happened in reconnection
+    func clientReconnectionError(client: SocketIOClient, error: String, description: String)
+    
+    // Called when the client reconnected
+    func clientReconnected(client: SocketIOClient)
+    
     func clientOnError(client: SocketIOClient, error: String, description: String)
     func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket)
 }
@@ -1436,10 +1476,10 @@ public class SocketIOClient: EngineSocketDelegate {
     var transports: [String] = []
     var readyState: SocketIOClientReadyState = .Closed
     var autoConnect: Bool
+    var autoReconnect: Bool
     var namespaces: [String: SocketIOSocket] = [:]
     var connectedSockets: [SocketIOSocket] = []
     
-    var _reconnect: Bool
     
     // How many attempts to reconnect. nil for infinite
     var reconnectAttempts: Int?
@@ -1448,9 +1488,9 @@ public class SocketIOClient: EngineSocketDelegate {
     var reconnectDelayMax: Int
     var timeout: Int
     
-    var reconnecting = false
-    var attempts: Int = 0
-    var engineSocket: EngineSocket?
+    public var reconnecting = false
+    public var attempts: Int = 0
+    public var engineSocket: EngineSocket?
     var decoder: SocketIOPacketDecoder
     var skipReconnect = false
     
@@ -1469,7 +1509,7 @@ public class SocketIOClient: EngineSocketDelegate {
             self.uri = uri
             self.transports = transports
             self.autoConnect = autoConnect
-            self._reconnect = reconnect
+            self.autoReconnect = reconnect
             self.reconnectAttempts = reconnectAttempts
             self.reconnectDelay = reconnectDelay
             self.reconnectDelayMax = reconnectDelayMax
@@ -1492,7 +1532,7 @@ public class SocketIOClient: EngineSocketDelegate {
     }
     
     func maybeReconnectOnOpen(){
-        if !self.openReconnectPerformed && !self.reconnecting && self._reconnect && self.attempts == 0{
+        if !self.openReconnectPerformed && !self.reconnecting && self.autoReconnect && self.attempts == 0{
             self.openReconnectPerformed = true
             self.reconnect()
         }
@@ -1526,21 +1566,67 @@ public class SocketIOClient: EngineSocketDelegate {
                 }
             }
         }
-        //TODO add timeout checking
     }
     
     func reconnect(){
+        if self.reconnecting || self.skipReconnect {
+            return
+        }
         
+        self.attempts++
+        
+        if self.reconnectAttempts != nil && self.attempts > self.reconnectAttempts {
+            NSLog("reconnect failed")
+            self.delegate?.clientReconnectionFailed(self)
+            self.reconnecting = false
+        }
+        else{
+            let delay = min(self.attempts * self.reconnectDelay, self.reconnectDelayMax)
+            NSLog("Will wait %d seconds before reconnect", delay)
+            
+            self.delay(Double(delay)){
+                [unowned self] ()->Void in
+                if self.skipReconnect {
+                    return
+                }
+                
+                NSLog("attempting to reconnect")
+                self.open()
+            }
+        }
     }
     
     // EngineSocketDelegate
     public func socketOnOpen(socket: EngineSocket) {
-        self.readyState = .Open
-        self.delegate?.clientOnOpen(self)
+        //
+        // Here locate a bug. The dispatch async not called!!! Could because that the queue is not empty or the queue
+        // blocked, CHeck this!!
+        //
+        NSLog("Socket opened")
+        dispatch_async(self.dispatchQueue){
+            [unowned self] () -> Void in
+            if self.reconnecting {
+                NSLog("[SocketIOClient] Reconnection succeeded")
+                self.reconnecting = false
+                self.attempts = 0
+                self.delegate?.clientReconnected(self)
+            }
+            else {
+                self.readyState = .Open
+                self.delegate?.clientOnOpen(self)
+            }
+        }
     }
     
     public func socketOnClose(socket: EngineSocket) {
+        NSLog("[SocketIOClient] Underlying socket closed")
         
+        self.readyState = .Closed
+        self.delegate?.clientOnClose(self)
+        
+        if self.autoReconnect {
+            self.reconnect()
+        }
     }
     
     public func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
@@ -1557,6 +1643,22 @@ public class SocketIOClient: EngineSocketDelegate {
         
         if let p = packet {
             self.delegate?.clientOnPacket(self, packet: p)
+        }
+    }
+    
+    public func socketOnError(socket: EngineSocket, error: String, description: String) {
+        dispatch_async(self.dispatchQueue){
+            [unowned self] () -> Void in
+            if self.reconnecting {
+                NSLog("Reconnect failed with error: %s [%s]", error, description)
+                
+                self.delegate?.clientReconnectionError(self, error: error, description: description)
+                self.reconnecting = false
+                self.reconnect()
+            }
+            else{
+                
+            }
         }
     }
     
