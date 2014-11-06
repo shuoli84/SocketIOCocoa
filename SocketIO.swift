@@ -92,7 +92,7 @@ public class Converter {
     
     // Convert form byte array to NSString 
     public class func bytearrayToNSString(bytes: [Byte]) -> NSString {
-        return self.nsdataToNSString(self.bytearrayToNSData(bytes))
+        return NSString(bytes: bytes, length: bytes.count, encoding: NSUTF8StringEncoding)!
     }
     
     // Convert from NSString to json object
@@ -1377,6 +1377,25 @@ public struct SocketIOPacket: Printable{
         }
         return results
     }
-    
+}
 
+public class SocketIOPacketDecoder {
+    // The reconstruct buffers
+    public var buffers: [NSData] = []
+    
+    // The packet which needs to be reconstructed
+    public var reconstructPacket: SocketIOPacket? = nil
+    
+    public func takeBinaryData(data: NSData) -> SocketIOPacket? {
+        self.buffers.append(data)
+        
+        if let packet = self.reconstructPacket {
+            if buffers.count == packet.attachments {
+                self.buffers.removeAll(keepCapacity: true)
+                self.reconstructPacket = nil
+                return BinaryParser.reconstructPacket(packet, buffers: self.buffers)
+            }
+        }
+        return nil
+    }
 }

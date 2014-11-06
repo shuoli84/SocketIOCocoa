@@ -321,7 +321,6 @@ class SocketIOCocoaTests: XCTestCase {
         XCTAssert(Converter.bytearrayToNSString(encodedString) == "2/chat,1231242{\"what\":\"the\"}")
         
         var decodedPacket = SocketIOPacket(decodedFromString: encodedString)
-        println(decodedPacket)
         
         XCTAssert(decodedPacket.type == .Event)
         XCTAssert(decodedPacket.id == "1231242")
