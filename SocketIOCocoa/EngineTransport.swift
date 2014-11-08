@@ -79,7 +79,7 @@ public protocol Transport {
     
 }
 
-public class BaseTransport: Transport {
+public class BaseTransport: Logger, Transport {
     // Engine protocol version
     let protocolVersion: Int = 3
     
@@ -129,7 +129,7 @@ public class BaseTransport: Transport {
             delegate.transportOnError(self, error: message, withDescription: description)
         }
         else{
-            NSLog("onError block not set, ignore error")
+            debug("onError block not set, ignore error")
         }
     }
     
@@ -140,7 +140,7 @@ public class BaseTransport: Transport {
             }
         }
         else{
-            NSLog("onData block not set, ignore packet")
+            debug("onData block not set, ignore packet")
         }
     }
     
@@ -194,12 +194,8 @@ public class PollingTransport : BaseTransport{
     // Polling complete callback
     var pollingCompleteBlock: (()->Void)?
     
-    public func logPrefix() -> String {
+    public override func logPrefix() -> String {
         return "[PollingTransport][\(self.readyState)]"
-    }
-    
-    public func debug(message: String){
-        NSLog("\(self.logPrefix()) \(message)")
     }
     
     public override var pausible : Bool {
@@ -240,7 +236,7 @@ public class PollingTransport : BaseTransport{
                     }
                     
                     if self.readyState == .Open {
-                        self.debug("[PollingTransport] polling")
+                        self.debug("polling")
                         dispatch_async(self.dispatchQueue()){
                             if self.readyState == .Open{
                                 self.poll()
@@ -286,7 +282,7 @@ public class PollingTransport : BaseTransport{
             }
             
             if self.readyState == .Open && self.sid == nil{
-                NSLog("Sid is none after connection openned")
+                debug("Sid is none after connection openned")
                 return
             }
             
@@ -297,7 +293,7 @@ public class PollingTransport : BaseTransport{
         }
     }
     
-    override public func close(){
+    public override func close(){
         if self.readyState == .Opening || self.readyState == .Open {
             self.pollingRequest?.cancel()
             self.postingRequest?.cancel()
@@ -305,9 +301,9 @@ public class PollingTransport : BaseTransport{
         }
     }
     
-    override public func write(packets: [EnginePacket]){
+    public override func write(packets: [EnginePacket]){
         if self.readyState == .Open{
-            NSLog("[PollingTransport] Send \(packets.count) packets out")
+            debug("Send \(packets.count) packets out")
             self.writable = false
             let encoded = EngineParser.encodePayload(packets)
             
@@ -324,12 +320,12 @@ public class PollingTransport : BaseTransport{
                         self.onError("error", description: "Failed sending data to server")
                     }
                     else{
-                        NSLog("[PollingTransport] Request send to server succeeded")
+                        self.debug("Request send to server succeeded")
                     }
                 })
         }
         else{
-            NSLog("Transport not open")
+            self.debug("Transport not open")
         }
     }
     
@@ -366,6 +362,10 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     // The websocket instance
     var websocket : Websocket?
     
+    public override func logPrefix() -> String{
+        return "[WebsocketTransport][\(self.readyState.description)]"
+    }
+    
     override public func open(){
         dispatch_async(self.dispatchQueue(), { () -> Void in
             if self.readyState == .Closed || self.readyState == .Init{
@@ -380,7 +380,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                     self.websocket = socket
                 }
                 else{
-                    NSLog("Invalid url \(uri)")
+                    self.debug("Invalid url \(uri)")
                 }
             }
         })
@@ -431,13 +431,13 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     // MARK Websocket delegate
     public func websocketDidConnect() {
         dispatch_async(self.dispatchQueue()){
-            NSLog("Websocket transport connected")
+            self.debug("Websocket transport connected")
             self.onOpen()
         }
     }
     
     public func websocketDidDisconnect(error: NSError?) {
-        NSLog("Websocket disconnected")
+        debug("Websocket disconnected")
         dispatch_async(self.dispatchQueue()){
             self.readyState = .Closed
             self.websocket = nil
@@ -449,20 +449,20 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func websocketDidReceiveData(data: NSData) {
         dispatch_async(self.dispatchQueue()){
-            NSLog("Received binary message \(data)")
+            self.debug("Received binary message \(data)")
             self.onData(data)
         }
     }
     
     public func websocketDidReceiveMessage(text: String) {
         dispatch_async(self.dispatchQueue()){
-            NSLog("Received test message \(text)")
+            self.debug("Received test message \(text)")
             self.onData(Converter.nsstringToNSData(text))
         }
     }
     
     public func websocketDidWriteError(error: NSError?) {
-        NSLog("Websocket write error")
+        debug("Websocket write error")
     }
     // END Websocket delegate
     

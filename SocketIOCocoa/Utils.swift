@@ -75,17 +75,29 @@ public class Converter {
     }
 }
 
-// Mark Engine Packet & Parser
-
-/*
-Engine parser used to encode and decode packet for engineio level. Since we are running on iOS, so we pretty sure we
-can support binary, this parser only implemented the binary part. No base64 support.
-*/
-
 // Ascii value enums
 enum ASCII: Byte {
     case _0 = 48, _1, _2, _3, _4, _5, _6, _7, _8, _9
     case a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
     case COMMA = 44, DASH = 45, BACKSLASH = 47
+}
+
+// Logger
+public protocol LoggerProtocol {
+    func logPrefix() -> String
+}
+
+public class Logger: LoggerProtocol {
+    public func logPrefix() -> String {
+        return "[Prefix Undefined]"
+    }
+    
+    public func debug(message: String) {
+        NSLog("[D]\(self.logPrefix()) \(message)")
+    }
+    
+    public func info(message: String) {
+        NSLog("[I]\(self.logPrefix()) \(message)")
+    }
 }

@@ -108,11 +108,11 @@
 		9C299CD21A048AF70002F47E /* SocketIOCocoa */ = {
 			isa = PBXGroup;
 			children = (
-				9C29C7D01A0E699E0036EDB3 /* SocketIO.swift */,
 				9C29C7C81A0E67BF0036EDB3 /* Utils.swift */,
 				9C29C7CA1A0E67F20036EDB3 /* EngineParser.swift */,
 				9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */,
 				9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */,
+				9C29C7D01A0E699E0036EDB3 /* SocketIO.swift */,
 				9C299CD51A048AF70002F47E /* SocketIOCocoa.h */,
 				9C299CD31A048AF70002F47E /* Supporting Files */,
 			);

@@ -55,19 +55,9 @@ SocketIOPacket: The packet struct in SocketIO layer
 SocketIOParser: The parser used to serialize and deserialize packets containing binary etc
 SocketIOSocket: The interface for client
 
-All the classes are in the single file, it sucks, but easy to be copy and paste into your project. More than Happier 
-to seperate them when Cocoapod swift matured.
 ***************************************************************/
 
 import Foundation
-
-/*
-       _____            __        __  ________
-      / ___/____  _____/ /_____  / /_/  _/ __ \
-      \__ \/ __ \/ ___/ //_/ _ \/ __// // / / /
-     ___/ / /_/ / /__/ ,< /  __/ /__/ // /_/ /
-    /____/\____/\___/_/|_|\___/\__/___/\____/
-*/
 
 public enum SocketIOPacketType: Byte, Printable{
     case Connect = 0, Disconnect, Event, Ack, Error, BinaryEvent, BinaryAck

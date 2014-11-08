@@ -33,7 +33,7 @@ enum EngineSocketReadyState : Int, Printable{
 // A counter which counts how many EngineSocket created
 var socketCount: Int = 0
 
-public class EngineSocket: EngineTransportDelegate{
+public class EngineSocket: Logger, EngineTransportDelegate{
     // Whether the protocol is secure
     var secure: Bool = false
     
@@ -132,7 +132,7 @@ public class EngineSocket: EngineTransportDelegate{
                 transport.open()
             }
             else{
-                NSLog("Not able to create transport")
+                self.debug("Not able to create transport")
             }
         }
     }
@@ -149,7 +149,7 @@ public class EngineSocket: EngineTransportDelegate{
     // EngineTransportDelegate
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         if self.readyState == .Open || self.readyState == .Opening{
-            NSLog("[EngineSocket] Receive: [\(packet.description)]")
+            info("Receive: [\(packet.description)]")
             
             switch packet.type{
             case .Open:
@@ -158,12 +158,12 @@ public class EngineSocket: EngineTransportDelegate{
                         self.onHandshake(json)
                     }
                     else{
-                        NSLog("Failed to parse json")
+                        debug("Failed to parse json")
                         return
                     }
                 }
                 else{
-                    NSLog("[EngineSocket] There is no data on Open packet")
+                    debug("There is no data on Open packet")
                     return
                 }
             case .Message:
@@ -173,7 +173,7 @@ public class EngineSocket: EngineTransportDelegate{
                     }
                 }
                 else{
-                    NSLog("No data on Message packet, ignore")
+                    debug("No data on Message packet, ignore")
                 }
             case .Pong:
                 break
@@ -185,12 +185,12 @@ public class EngineSocket: EngineTransportDelegate{
                     self.onError("error")
                 }
             default:
-                NSLog("HITTING DEFAULT CLAUSE, CAREFUL")
+                debug("HITTING DEFAULT CLAUSE, CAREFUL")
                 break
             }
         }
         else{
-            NSLog("[EngineSocket][\(self.readyState.description)] packet received with socket readyState ")
+            debug("packet received with socket readyState ")
         }
     }
     
@@ -198,13 +198,13 @@ public class EngineSocket: EngineTransportDelegate{
     
     public func transportOnClose(transport: Transport) {
         if self.readyState == .Closing {
-            NSLog("[EngineSocket][\(self.readyState.description)] The transport closed as expected")
+            debug("The transport closed as expected")
             
             self.readyState = .Closed
             self.delegate?.socketOnClose(self)
         }
         else{
-            NSLog("[EngineSocket][\(self.readyState.description)] The transport closed unexpected")
+            debug("The transport closed unexpected")
             self.delegate?.socketOnClose(self)
         }
     }
@@ -224,7 +224,7 @@ public class EngineSocket: EngineTransportDelegate{
             self.transport!.sid = sid
         }
         else{
-            NSLog("Not able to parse sid")
+            debug("Not able to parse sid")
         }
         
         if let upgrades = data["upgrades"] as? [String]{
@@ -247,7 +247,7 @@ public class EngineSocket: EngineTransportDelegate{
     }
     
     func onOpen(){
-        NSLog("Socket Open")
+        debug("Socket Open")
         
         self.readyState = .Open
         
@@ -258,7 +258,7 @@ public class EngineSocket: EngineTransportDelegate{
         self.flush() // Flush out cached packets
         
         if self.readyState == .Open && self.upgrade && self.transport!.pausible {
-            NSLog("Start upgrading")
+            debug("Start upgrading")
             for upgrade in upgrades {
                 self.probe(upgrade)
             }
@@ -296,11 +296,11 @@ public class EngineSocket: EngineTransportDelegate{
     func flush(){
         if self.readyState != .Closed && !self.upgrading && self.transport!.writable {
             if self.writeQueue.count == 0 {
-                NSLog("[EngineSocket][\(self.readyState.description)] The writeQueue is empty, return")
+                debug("The writeQueue is empty, return")
                 return
             }
             
-            NSLog("Flushing \(self.writeQueue.count) packets")
+            debug("Flushing \(self.writeQueue.count) packets")
             
             // LOCK HERE
             let packets = self.writeQueue
@@ -309,7 +309,7 @@ public class EngineSocket: EngineTransportDelegate{
             self.transport!.write(packets)
         }
         else{
-            NSLog("[EngineSocket][\(self.readyState.description)] [Upgrading:\(self.upgrading)] [Transport-writable:\(self.transport!.writable)] Skip flush")
+            debug("Skip flush")
         }
     }
     
@@ -320,10 +320,14 @@ public class EngineSocket: EngineTransportDelegate{
     func packet(packet: EnginePacket, callback: (()->Void)?){
         dispatch_async(self.queue){
             [unowned self] () -> Void in
-            NSLog("[EngineIOSocket][\(self.readyState.description)] Enqueue packet")
+            self.debug("Enqueue packet")
             self.writeQueue.append(packet)
             self.writeCallbackQueue.append(callback)
             self.flush()
         }
+    }
+    
+    public override func logPrefix() -> String{
+        return "[EngineSocket][\(self.readyState.description)][Upg:\(self.upgrading ? 1:0)][TW:\(self.transport!.writable ? 1:0)]"
     }
 }

@@ -1,11 +1,3 @@
-//
-//  EngineIO.swift
-//  SocketIOCocoa
-//
-//  Created by LiShuo on 14/11/8.
-//  Copyright (c) 2014年 LiShuo. All rights reserved.
-//
-
 import Foundation
 
 /*
@@ -15,6 +7,9 @@ import Foundation
  //__| | | | (_| | | | | |  __/\/ /_/ \_//
  \__/|_| |_|\__, |_|_| |_|\___\____/\___/
              |___/
+
+Engine parser used to encode and decode packet for engineio level. Since we are running on iOS, so we pretty sure we
+can support binary, this parser only implemented the binary part. No base64 support.
 */
 
 // The packet type for engine, the lower level of socketio
