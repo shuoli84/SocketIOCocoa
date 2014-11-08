@@ -10,12 +10,13 @@
 		0B36FA742329C8932E67C35F /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F11A8F6233D21997C33D7D49 /* libPods.a */; };
 		9C299CD61A048AF70002F47E /* SocketIOCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = 9C299CD51A048AF70002F47E /* SocketIOCocoa.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9C299CDC1A048AF70002F47E /* SocketIOCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */; };
-		9C299CE31A048AF70002F47E /* SocketIOCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */; };
+		9C299CE31A048AF70002F47E /* SocketIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CE21A048AF70002F47E /* SocketIOTests.swift */; };
 		9C299CED1A048FA20002F47E /* SocketIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CEC1A048FA20002F47E /* SocketIO.swift */; };
 		9C8746121A0782840026CE61 /* alamofire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C87460F1A0782840026CE61 /* alamofire.swift */; };
 		9C8746131A0782840026CE61 /* Dollar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746101A0782840026CE61 /* Dollar.swift */; };
 		9C8746141A0782840026CE61 /* SwifterSnippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746111A0782840026CE61 /* SwifterSnippet.swift */; };
 		9C8746161A07C50D0026CE61 /* starscream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746151A07C50D0026CE61 /* starscream.swift */; };
+		9CC4DE761A0E102A00BD6DD9 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,12 +35,13 @@
 		9C299CD51A048AF70002F47E /* SocketIOCocoa.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SocketIOCocoa.h; sourceTree = "<group>"; };
 		9C299CDB1A048AF70002F47E /* SocketIOCocoaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SocketIOCocoaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C299CE11A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketIOCocoaTests.swift; sourceTree = "<group>"; };
+		9C299CE21A048AF70002F47E /* SocketIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketIOTests.swift; sourceTree = "<group>"; };
 		9C299CEC1A048FA20002F47E /* SocketIO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SocketIO.swift; path = ../SocketIO.swift; sourceTree = "<group>"; };
 		9C87460F1A0782840026CE61 /* alamofire.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = alamofire.swift; path = vender/alamofire.swift; sourceTree = "<group>"; };
 		9C8746101A0782840026CE61 /* Dollar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Dollar.swift; path = vender/Dollar.swift; sourceTree = "<group>"; };
 		9C8746111A0782840026CE61 /* SwifterSnippet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SwifterSnippet.swift; path = vender/SwifterSnippet.swift; sourceTree = "<group>"; };
 		9C8746151A07C50D0026CE61 /* starscream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = starscream.swift; sourceTree = "<group>"; };
+		9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
 		C683D0750A5BED5403E25D41 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		CD168E7B21F68EBF458D587D /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		F11A8F6233D21997C33D7D49 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -116,7 +118,8 @@
 		9C299CDF1A048AF70002F47E /* SocketIOCocoaTests */ = {
 			isa = PBXGroup;
 			children = (
-				9C299CE21A048AF70002F47E /* SocketIOCocoaTests.swift */,
+				9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */,
+				9C299CE21A048AF70002F47E /* SocketIOTests.swift */,
 				9C299CE01A048AF70002F47E /* Supporting Files */,
 			);
 			path = SocketIOCocoaTests;
@@ -303,7 +306,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C299CE31A048AF70002F47E /* SocketIOCocoaTests.swift in Sources */,
+				9C299CE31A048AF70002F47E /* SocketIOTests.swift in Sources */,
+				9CC4DE761A0E102A00BD6DD9 /* EngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
