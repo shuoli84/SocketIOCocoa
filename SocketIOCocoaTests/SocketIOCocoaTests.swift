@@ -472,10 +472,83 @@ class SocketIOCocoaTests: XCTestCase {
         self.waitForExpectationsWithTimeout(10, handler: nil)
     }
     
-    func testSocketIOSocket(){
-        let uri = "http://localhost:8001/socket.io/"
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 3)
-        var socket = SocketIOSocket(client: client, namespace: "chat", autoConnect: false)
+    func testSocketIOSocketWrongNameSpace(){
+        class SocketIODelegate: SocketIOSocketDelegate {
+            var expectation: XCTestExpectation?
+            var errorexpectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
+                NSLog("Socket on Event \(event), data \(data)")
+            }
+            
+            private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {
+                NSLog("Socket on Packet \(packet)")
+            }
+            
+            private func socketOnOpen(socket: SocketIOSocket) {
+                NSLog("Socket on open")
+                self.expectation?.fulfill()
+            }
+            
+            private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
+                NSLog("Socket on error: \(error)")
+                self.errorexpectation?.fulfill()
+            }
+        }
         
+        let uri = "http://localhost:8001/socket.io/"
+        // Open socket and client together
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        
+        var socket = client.socket("wrongnamespace")
+        var delegate = SocketIODelegate()
+        var expectation = self.expectationWithDescription("Socket fail on wrong namespace")
+        delegate.errorexpectation = expectation
+        socket.delegate = delegate
+        socket.open()
+        // Open client first, then open the socket
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+    }
+    
+    func testSocketIOSocketConnect(){
+        class SocketIODelegate: SocketIOSocketDelegate {
+            var expectation: XCTestExpectation?
+            var errorexpectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
+                NSLog("Socket on Event \(event), data \(data)")
+            }
+            
+            private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {
+                NSLog("Socket on Packet \(packet)")
+            }
+            
+            private func socketOnOpen(socket: SocketIOSocket) {
+                NSLog("Socket on open")
+                self.expectation?.fulfill()
+            }
+            
+            private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
+                NSLog("Socket on error: \(error)")
+                self.errorexpectation?.fulfill()
+            }
+        }
+        
+        let uri = "http://localhost:8001/socket.io/"
+        // Open socket and client together
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        
+        // The echo namespace is defined in socketio server
+        var expectation = self.expectationWithDescription("Socket open")
+        var socket = client.socket("echo")
+        var delegate = SocketIODelegate()
+        socket.delegate = delegate
+        delegate.expectation = expectation
+        socket.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
     }
 }

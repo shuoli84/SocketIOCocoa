@@ -102,7 +102,7 @@ public class Converter {
     
     // Convert from NSData to json object
     public class func nsdataToJSON(data: NSData) -> NSDictionary? {
-        return NSJSONSerialization.JSONObjectWithData(data, options: .MutableContainers, error: nil) as [String: AnyObject]
+        return NSJSONSerialization.JSONObjectWithData(data, options: .MutableContainers, error: nil) as? [String: AnyObject]
     }
     
     // Convert from JSON to nsdata
@@ -575,12 +575,9 @@ public class PollingTransport : BaseTransport{
         self.polling = true
         self.pollingRequest = request(.GET, uri)
         .response { (request, response, data, error) -> Void in
-            // Consider dispatch to the same queue
             dispatch_async(self.dispatchQueue()){ ()-> Void in
-                NSLog("Response get")
-                
                 if response?.statusCode >= 200 && response?.statusCode < 300 {
-                    NSLog("Request succeeded")
+                    NSLog("[EngineSocket][\(self.readyState.description)]Request succeeded")
                     
                     if let nsdata = data as? NSData {
                         self.onData(nsdata)
@@ -592,8 +589,8 @@ public class PollingTransport : BaseTransport{
                     }
                 }
                 
-                if self.readyState == .Open{
-                    NSLog("The state is Open, keep polling")
+                if self.readyState == .Open {
+                    NSLog("[PollingTransport] polling")
                     dispatch_async(self.dispatchQueue()){
                         if self.readyState == .Open{
                             self.poll()
@@ -605,6 +602,7 @@ public class PollingTransport : BaseTransport{
     }
     
     func onPollingComplete(){
+        self.polling = false
         if let callback = self.pollingCompleteBlock {
             callback()
         }
@@ -619,6 +617,7 @@ public class PollingTransport : BaseTransport{
             if self.readyState == .Opening {
                 NSLog("Polling got data back, set state to Open")
                 self.readyState = .Open
+                self.writable = true
             }
             
             if packet.type == .Close {
@@ -985,7 +984,6 @@ public class EngineSocket: EngineTransportDelegate{
     
     // EngineTransportDelegate
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
-        NSLog("[EngineSocket] Received one packet")
         if self.readyState == .Open || self.readyState == .Opening{
             NSLog("[EngineSocket] Receive: [\(packet.description)]")
             
@@ -1028,7 +1026,7 @@ public class EngineSocket: EngineTransportDelegate{
             }
         }
         else{
-            NSLog("packet received with socket readyState [\(self.readyState.description)]")
+            NSLog("[EngineSocket][\(self.readyState.description)] packet received with socket readyState ")
         }
     }
     
@@ -1133,7 +1131,8 @@ public class EngineSocket: EngineTransportDelegate{
     
     func flush(){
         if self.readyState != .Closed && !self.upgrading && self.transport!.writable {
-            if self.writeQueue.count == 0{
+            if self.writeQueue.count == 0 {
+                NSLog("[EngineSocket][\(self.readyState.description)] The writeQueue is empty, return")
                 return
             }
             
@@ -1145,6 +1144,9 @@ public class EngineSocket: EngineTransportDelegate{
             // UNLOCK HERE
             self.transport!.write(packets)
         }
+        else{
+            NSLog("[EngineSocket][\(self.readyState.description)] [Upgrading:\(self.upgrading)] [Transport-writable:\(self.transport!.writable)] Skip flush")
+        }
     }
     
     func probe(upgrade: String){
@@ -1154,6 +1156,7 @@ public class EngineSocket: EngineTransportDelegate{
     func packet(packet: EnginePacket, callback: (()->Void)?){
         dispatch_async(self.queue){
             [unowned self] () -> Void in
+            NSLog("[EngineIOSocket][\(self.readyState.description)] Enqueue packet")
             self.writeQueue.append(packet)
             self.writeCallbackQueue.append(callback)
             self.flush()
@@ -1359,6 +1362,9 @@ public struct SocketIOPacket: Printable{
             if let json = Converter.bytearrayToJSON(bodyBuffer) {
                 data = json
             }
+            else{
+                data = Converter.bytearrayToNSString(bodyBuffer)
+            }
         }
        
         self.init(type: packetType!, data: data, nsp: nsp, id: id, attachments: attachment)
@@ -1472,7 +1478,7 @@ public enum SocketIOClientReadyState: Int, Printable {
 
 public class SocketIOClient: EngineSocketDelegate {
     public var uri: String
-    var transports: [String] = []
+    var transports: [String]
     var readyState: SocketIOClientReadyState = .Closed
     var autoConnect: Bool
     var autoReconnect: Bool
@@ -1659,8 +1665,7 @@ public class SocketIOClient: EngineSocketDelegate {
     }
     
     public func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
-        NSLog("[SocketIOClient[\(self.readyState.description)] got packet from underlying socket")
-        
+        NSLog("[SocketIOClient][\(self.readyState.description)] got packet from underlying socket")
         
         var socketIOPacket: SocketIOPacket?
         
@@ -1670,15 +1675,7 @@ public class SocketIOClient: EngineSocketDelegate {
         else{
             socketIOPacket = self.decoder.addString(data)
         }
-        
-        var packet: SocketIOPacket?
-        if isBinary {
-            packet = self.decoder.addBuffer(Converter.bytearrayToNSData(data))
-        }
-        else {
-            packet = self.decoder.addString(data)
-        }
-        
+       
         if socketIOPacket != nil {
             self.delegate?.clientOnPacket(self, packet: socketIOPacket!)
             
@@ -1721,6 +1718,12 @@ public protocol SocketIOSocketDelegate {
     
     // Called when the socket received an event
     func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
+    
+    // Called when the socket is open
+    func socketOnOpen(socket: SocketIOSocket)
+    
+    // Called when the socket is on error
+    func socketOnError(socket: SocketIOSocket, error: String, description: String?)
 }
 
 public class SocketIOSocket{
@@ -1754,6 +1757,11 @@ public class SocketIOSocket{
         }
     }
     
+    // This function will be called by the client
+    public func onOpen(){
+        self.delegate?.socketOnOpen(self)
+    }
+    
     public func connect(){
         NSLog("[SocketIOSocket][\(self.namespace)][\(self.connected)] connect to namespace")
         self.packet(.Connect)
@@ -1777,19 +1785,31 @@ public class SocketIOSocket{
     public func receivePacket(packet: SocketIOPacket){
         self.delegate?.socketOnPacket(self, packet: packet)
         
-        if var dataArray = packet.data? as? NSArray {
-            if dataArray.count > 0 {
-                let event: NSString = dataArray[0] as NSString
-                if dataArray.count > 1{
-                    self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
-                }
-                else{
-                    self.delegate?.socketOnEvent(self, event: event, data: nil)
+        switch packet.type {
+        case .Connect:
+            self.connected = true
+            self.delegate?.socketOnOpen(self)
+        case .Error:
+            self.delegate?.socketOnError(self, error: packet.data as String, description: nil)
+        case .Event, .BinaryEvent:
+            if var dataArray = packet.data? as? NSArray {
+                if dataArray.count > 0 {
+                    let event: NSString = dataArray[0] as NSString
+                    if dataArray.count > 1{
+                        self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
+                    }
+                    else{
+                        self.delegate?.socketOnEvent(self, event: event, data: nil)
+                    }
                 }
             }
-        }
-        else{
-            NSLog("The data is not a array, not able to get the event name, ignore")
+            else{
+                NSLog("The data is not a array, not able to get the event name, ignore")
+            }
+        case .Ack, .BinaryAck:
+            break
+        default:
+            break
         }
     }
 }
