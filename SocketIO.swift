@@ -96,13 +96,13 @@ public class Converter {
     }
     
     // Convert from NSString to json object
-    public class func nsstringToJSON(str: NSString) -> NSDictionary? {
+    public class func nsstringToJSON(str: NSString) -> AnyObject? {
         return self.nsdataToJSON(self.nsstringToNSData(str))
     }
     
     // Convert from NSData to json object
-    public class func nsdataToJSON(data: NSData) -> NSDictionary? {
-        return NSJSONSerialization.JSONObjectWithData(data, options: .MutableContainers, error: nil) as? [String: AnyObject]
+    public class func nsdataToJSON(data: NSData) -> AnyObject? {
+        return NSJSONSerialization.JSONObjectWithData(data, options: .MutableContainers, error: nil)
     }
     
     // Convert from JSON to nsdata
@@ -131,7 +131,7 @@ public class Converter {
     }
     
     // Convert from byte array to json
-    public class func bytearrayToJSON(bytes: [Byte]) -> NSDictionary? {
+    public class func bytearrayToJSON(bytes: [Byte]) -> AnyObject? {
         return self.nsdataToJSON(self.bytearrayToNSData(bytes))
     }
 }
@@ -990,7 +990,7 @@ public class EngineSocket: EngineTransportDelegate{
             switch packet.type{
             case .Open:
                 if let data = packet.data{
-                    if let json = Converter.bytearrayToJSON(data){
+                    if let json = Converter.bytearrayToJSON(data) as? NSDictionary{
                         self.onHandshake(json)
                     }
                     else{
@@ -1359,7 +1359,7 @@ public struct SocketIOPacket: Printable{
         // Parse the body
         if offset < string.count {
             let bodyBuffer = [Byte](string[offset..<string.count])
-            if let json = Converter.bytearrayToJSON(bodyBuffer) {
+            if let json: AnyObject = Converter.bytearrayToJSON(bodyBuffer) {
                 data = json
             }
             else{
@@ -1792,19 +1792,21 @@ public class SocketIOSocket{
         case .Error:
             self.delegate?.socketOnError(self, error: packet.data as String, description: nil)
         case .Event, .BinaryEvent:
-            if var dataArray = packet.data? as? NSArray {
-                if dataArray.count > 0 {
-                    let event: NSString = dataArray[0] as NSString
-                    if dataArray.count > 1{
-                        self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
-                    }
-                    else{
-                        self.delegate?.socketOnEvent(self, event: event, data: nil)
+            if let data: AnyObject = packet.data {
+                if let dataArray = data as? NSArray {
+                    if dataArray.count > 0 {
+                        let event: NSString = dataArray[0] as NSString
+                        if dataArray.count > 1{
+                            self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
+                        }
+                        else{
+                            self.delegate?.socketOnEvent(self, event: event, data: nil)
+                        }
                     }
                 }
-            }
-            else{
-                NSLog("The data is not a array, not able to get the event name, ignore")
+                else{
+                    NSLog("The data is not a array, not able to get the event name, ignore")
+                }
             }
         case .Ack, .BinaryAck:
             break

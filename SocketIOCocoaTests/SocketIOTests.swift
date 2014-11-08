@@ -284,4 +284,42 @@ class SocketIOCocoaTests: XCTestCase {
         socket.open()
         self.waitForExpectationsWithTimeout(30, handler: nil)
     }
+    
+    func testSocketIOSocketReceive(){
+        class SocketIODelegate: SocketIOSocketDelegate {
+            var expectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
+                NSLog("Socket on Event \(event), data \(data)")
+                self.expectation?.fulfill()
+            }
+            
+            private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {
+                NSLog("Socket on Packet \(packet)")
+            }
+            
+            private func socketOnOpen(socket: SocketIOSocket) {
+                NSLog("Socket on open")
+            }
+            
+            private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
+                NSLog("Socket on error: \(error)")
+            }
+        }
+        
+        let uri = "http://localhost:8001/socket.io/"
+        // Open socket and client together
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        
+        // The echo namespace is defined in socketio server
+        var expectation = self.expectationWithDescription("Socket open")
+        var socket = client.socket("echo")
+        var delegate = SocketIODelegate()
+        socket.delegate = delegate
+        delegate.expectation = expectation
+        socket.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+    }
 }
