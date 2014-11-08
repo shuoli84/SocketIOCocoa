@@ -12,6 +12,10 @@
 		9C299CDC1A048AF70002F47E /* SocketIOCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C299CD01A048AF70002F47E /* SocketIOCocoa.framework */; };
 		9C299CE31A048AF70002F47E /* SocketIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CE21A048AF70002F47E /* SocketIOTests.swift */; };
 		9C299CED1A048FA20002F47E /* SocketIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C299CEC1A048FA20002F47E /* SocketIO.swift */; };
+		9C29C7C91A0E67BF0036EDB3 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7C81A0E67BF0036EDB3 /* Utils.swift */; };
+		9C29C7CB1A0E67F20036EDB3 /* EngineParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7CA1A0E67F20036EDB3 /* EngineParser.swift */; };
+		9C29C7CD1A0E685E0036EDB3 /* EngineTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */; };
+		9C29C7CF1A0E690B0036EDB3 /* EngineSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */; };
 		9C8746121A0782840026CE61 /* alamofire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C87460F1A0782840026CE61 /* alamofire.swift */; };
 		9C8746131A0782840026CE61 /* Dollar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746101A0782840026CE61 /* Dollar.swift */; };
 		9C8746141A0782840026CE61 /* SwifterSnippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746111A0782840026CE61 /* SwifterSnippet.swift */; };
@@ -37,6 +41,10 @@
 		9C299CE11A048AF70002F47E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9C299CE21A048AF70002F47E /* SocketIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketIOTests.swift; sourceTree = "<group>"; };
 		9C299CEC1A048FA20002F47E /* SocketIO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SocketIO.swift; path = ../SocketIO.swift; sourceTree = "<group>"; };
+		9C29C7C81A0E67BF0036EDB3 /* Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		9C29C7CA1A0E67F20036EDB3 /* EngineParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineParser.swift; sourceTree = "<group>"; };
+		9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineTransport.swift; sourceTree = "<group>"; };
+		9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineSocket.swift; sourceTree = "<group>"; };
 		9C87460F1A0782840026CE61 /* alamofire.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = alamofire.swift; path = vender/alamofire.swift; sourceTree = "<group>"; };
 		9C8746101A0782840026CE61 /* Dollar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Dollar.swift; path = vender/Dollar.swift; sourceTree = "<group>"; };
 		9C8746111A0782840026CE61 /* SwifterSnippet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SwifterSnippet.swift; path = vender/SwifterSnippet.swift; sourceTree = "<group>"; };
@@ -100,6 +108,10 @@
 		9C299CD21A048AF70002F47E /* SocketIOCocoa */ = {
 			isa = PBXGroup;
 			children = (
+				9C29C7C81A0E67BF0036EDB3 /* Utils.swift */,
+				9C29C7CA1A0E67F20036EDB3 /* EngineParser.swift */,
+				9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */,
+				9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */,
 				9C299CEC1A048FA20002F47E /* SocketIO.swift */,
 				9C299CD51A048AF70002F47E /* SocketIOCocoa.h */,
 				9C299CD31A048AF70002F47E /* Supporting Files */,
@@ -294,11 +306,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C29C7CF1A0E690B0036EDB3 /* EngineSocket.swift in Sources */,
 				9C8746121A0782840026CE61 /* alamofire.swift in Sources */,
+				9C29C7CB1A0E67F20036EDB3 /* EngineParser.swift in Sources */,
 				9C8746131A0782840026CE61 /* Dollar.swift in Sources */,
+				9C29C7CD1A0E685E0036EDB3 /* EngineTransport.swift in Sources */,
 				9C8746141A0782840026CE61 /* SwifterSnippet.swift in Sources */,
 				9C8746161A07C50D0026CE61 /* starscream.swift in Sources */,
 				9C299CED1A048FA20002F47E /* SocketIO.swift in Sources */,
+				9C29C7C91A0E67BF0036EDB3 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
