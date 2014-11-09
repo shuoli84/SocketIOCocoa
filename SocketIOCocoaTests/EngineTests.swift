@@ -141,6 +141,9 @@ class EnginePacketTest: XCTestCase{
                 XCTAssert(packet.type == .Open)
                 self.expectation.fulfill()
             }
+            private func transportOnPause(transport: Transport) {
+                
+            }
             private func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
                 return self.dispatchQueue
             }
@@ -185,6 +188,9 @@ class EnginePacketTest: XCTestCase{
             private func transportOnPacket(transport: Transport, packet: EnginePacket) {
                 println(packet)
             }
+            private func transportOnPause(transport: Transport) {
+                
+            }
             private func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
                 return self.dispatchQueue
             }
@@ -202,7 +208,7 @@ class EnginePacketTest: XCTestCase{
         sleep(1)
     }
     
-    func testEngineSocket(){
+    func testEngineSocketData(){
         var expectation = self.expectationWithDescription("async request")
         var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
         XCTAssertNotNil(socket)
@@ -227,6 +233,7 @@ class EnginePacketTest: XCTestCase{
             private func socketOnClose(socket: EngineSocket) { }
             private func socketOnError(socket: EngineSocket, error: String, description: String) {
             }
+            private func socketDidUpgraded(socket: EngineSocket) { }
         }
         
         var delegate = TestSocketDelegate(expectation: expectation)
@@ -234,5 +241,45 @@ class EnginePacketTest: XCTestCase{
         socket.open()
         
         self.waitForExpectationsWithTimeout(30, handler: nil)
+    }
+    
+    // Root cause is the transport created just be released. No strong reference to it. We need to find a place
+    // To hold it. :(
+    func testEngineSocketUpgrade(){
+        var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
+        XCTAssertNotNil(socket)
+        
+        var expectation = self.expectationWithDescription("hh")
+        
+        class TestSocketDelegate: EngineSocketDelegate{
+            var expectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
+                println("Recieved packet")
+            }
+            
+            private func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
+                println(data)
+            }
+            
+            private func socketOnOpen(socket: EngineSocket) { }
+            private func socketOnClose(socket: EngineSocket) { }
+            private func socketOnError(socket: EngineSocket, error: String, description: String) { }
+            private func socketDidUpgraded(socket: EngineSocket) {
+                println("Upgraded")
+                self.expectation?.fulfill()
+            }
+        }
+        
+        var delegate = TestSocketDelegate()
+        delegate.expectation = expectation
+        socket.delegate = delegate
+        socket.open()
+        
+        self.waitForExpectationsWithTimeout(5, handler: nil)
+        
+        XCTAssert(socket.transport?.name == "websocket")
     }
 }

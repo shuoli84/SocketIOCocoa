@@ -13,6 +13,9 @@ public protocol EngineSocketDelegate: class{
     
     // Called when there is an error occured
     func socketOnError(socket: EngineSocket, error: String, description: String)
+    
+    // Called when there is an error occured
+    func socketDidUpgraded(socket: EngineSocket)
 }
 
 enum EngineSocketReadyState : Int, Printable{
@@ -67,12 +70,18 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     // Flag indicating whether we are in the upgrading phase
     var upgrading: Bool = false
     
+    // List containing all running upgrades
+    var upgradingTransports: [ProbeTransportDelegate] = []
+    
+    // The highest transport we upgraded to, we should reconnect using it directly
+    var upgradedToTransport: String?
+    
     // The state of socket
     var readyState: EngineSocketReadyState = .Init
     
     // Transport instance
-    var transport: Transport?
-    
+    public var transport: Transport?
+   
     // Ping interval
     var pingInterval: Int = 30000
     
@@ -84,6 +93,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     // The write calllback queue
     var writeCallbackQueue: [(()->Void)?] = []
+    
     
     // The delegate
     public weak var delegate: EngineSocketDelegate?
@@ -210,6 +220,18 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     public func transportOnOpen(transport: Transport) { }
+
+    public func transportOnPause(transport: Transport) {
+        // If the transport pasued, lets see whether it is in upgrading, if yes, then fire the event to the upgrade delegate to finish
+        // The upgrading logic
+        debug("Transport [\(transport.name)] Paused")
+        
+        for d in self.upgradingTransports {
+            if d.prevTransport === transport {
+                d.onPrevTransportPaused()
+            }
+        }
+    }
     
     public func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
         // All transport related task should run on socket's queue
@@ -314,7 +336,14 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     func probe(upgrade: String){
-        
+        if var transport = self.createTransport(upgrade) {
+            debug("probing: \(upgrade)")
+            var probeTransportDelegate = ProbeTransportDelegate(socket: self, transportName: upgrade, transport: transport, prev: self.transport!)
+            transport.delegate = probeTransportDelegate
+            transport.open()
+            
+            self.upgradingTransports.append(probeTransportDelegate)
+        }
     }
     
     func packet(packet: EnginePacket, callback: (()->Void)?){
@@ -328,6 +357,103 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     public override func logPrefix() -> String{
-        return "[EngineSocket][\(self.readyState.description)][Upg:\(self.upgrading ? 1:0)][TW:\(self.transport!.writable ? 1:0)]"
+        return "[EngineSocket(\(self.id?))][\(self.readyState.description)][Upg:\(self.upgrading ? 1:0)][TW:\(self.transport!.writable ? 1:0)]"
     }
 }
+
+
+class ProbeTransportDelegate: Logger, EngineTransportDelegate {
+    var failed = false
+    var engineSocket: EngineSocket!
+    var transportName: String
+    // intented to use strong ref to prevent it from dealloc
+    var transport: Transport
+    
+    // The prev Transport
+    unowned var prevTransport: Transport
+    
+    init(socket: EngineSocket, transportName: String, transport: Transport, prev: Transport){
+        self.engineSocket = socket
+        self.transportName = transportName
+        self.transport = transport
+        self.prevTransport = prev
+    }
+    
+    override func logPrefix() -> String {
+        return "[ProbeTransportDelegate][Failed:\(self.failed)]"
+    }
+
+    func transportOnOpen(transport: Transport) {
+        debug("Probing \(self.transportName)")
+        
+        transport.write([EnginePacket(string: "probe", type: .Ping)])
+    }
+    
+    func transportOnPacket(transport: Transport, packet: EnginePacket) {
+        if self.failed {
+            return
+        }
+
+        if packet.type == .Pong {
+            if let data = packet.data {
+                let message = Converter.bytearrayToNSString(data)
+                if message == "probe" {
+                    debug("Probe transport pong")
+                    self.engineSocket.upgrading = true
+                    self.engineSocket.upgradedToTransport = self.transportName
+                    debug("Pause current transport")
+                    self.engineSocket.transport?.pause()
+                    // We should wait till the pause succeed
+                }
+            }
+        }
+        else{
+            debug("Probe \(self.transportName) failed")
+        }
+    }
+    
+    func onPrevTransportPaused(){
+        debug("Prev transport paused")
+        if self.failed || self.engineSocket.readyState == .Closed {
+            debug("The upgrade failed or the socket is closed, skip the upgrading")
+            return
+        }
+        
+        debug("Changing transport and sending upgrade packet")
+        self.transport.setDelegate(self.engineSocket)
+        
+        $.remove(self.engineSocket.upgradingTransports) { $0 === self }
+        
+        self.transport.write([EnginePacket(data: nil, type: .Upgrade)])
+        self.engineSocket.transport = self.transport
+        self.engineSocket.upgrading = false
+        self.engineSocket.delegate?.socketDidUpgraded(self.engineSocket)
+        self.engineSocket.flush()
+        
+        self.prevTransport.delegate = nil
+        self.prevTransport.close()
+    }
+
+    func transportOnPause(transport: Transport){}
+    
+    func transportOnError(transport: Transport, error: String, withDescription description: String){
+       self.onError(transport)
+    }
+    
+    // Called when the transport closed
+    func transportOnClose(transport: Transport){
+        self.onError(transport)
+    }
+    
+    // Called when the dispatch queue needed
+    func transportDispatchQueue(transport: Transport) -> dispatch_queue_t {
+        return self.engineSocket.queue
+    }
+    
+    func onError(transport: Transport){
+        self.failed = true
+        transport.setDelegate(nil)
+        transport.close() 
+    }
+}
+

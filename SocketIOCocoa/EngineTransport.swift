@@ -11,7 +11,7 @@ import Foundation
 // Mark Engine Transport
 
 public enum TransportReadyState: Printable, DebugPrintable{
-    case Init, Open, Opening, Closing, Closed
+    case Init, Open, Opening, Closing, Closed, Pausing, Paused
     
     public var description: String {
         switch self{
@@ -20,6 +20,8 @@ public enum TransportReadyState: Printable, DebugPrintable{
         case Opening: return "Opening"
         case Closing: return "Closing"
         case Closed: return "Closed"
+        case Pausing: return "Pausing"
+        case Paused: return "Paused"
         }
     }
     
@@ -49,10 +51,13 @@ public protocol EngineTransportDelegate: class {
     
     // Called when the dispatch queue needed
     func transportDispatchQueue(transport: Transport) -> dispatch_queue_t
+    
+    // Called when the transport paused
+    func transportOnPause(transport: Transport)
 }
 
 // Base class for transport
-public protocol Transport {
+public protocol Transport: class {
     /**
     Whether the transport is writable. The client should always check the writable flag.
     Transport class don't have a write queue. So each write goes straight into send method.
@@ -66,8 +71,12 @@ public protocol Transport {
     // Whether the transport supports pausible
     var pausible : Bool { get }
     
+    // The name of the transport
+    var name: String { get }
+    
     // Delegate
     weak var delegate: EngineTransportDelegate? { get set }
+    func setDelegate(delegate: EngineTransportDelegate?)
     
     func open()
     
@@ -107,10 +116,14 @@ public class BaseTransport: Logger, Transport {
     // The delegate
     public weak var delegate: EngineTransportDelegate?
     
+    public func setDelegate(delegate: EngineTransportDelegate?){
+        self.delegate = delegate
+    }
+    
     public var pausible : Bool { get { return false } }
     
     // The name of transport
-    var name : String {
+    public var name : String {
         get {
             return "_base_transport"
         }
@@ -178,7 +191,7 @@ public class BaseTransport: Logger, Transport {
 
 public class PollingTransport : BaseTransport{
     // The name of the transport
-    override var name : String{
+    override public var name : String{
         get { return "polling" }
     }
     
@@ -190,9 +203,6 @@ public class PollingTransport : BaseTransport{
     
     // Posting request
     var postingRequest: Request?
-    
-    // Polling complete callback
-    var pollingCompleteBlock: (()->Void)?
     
     public override func logPrefix() -> String {
         return "[PollingTransport][\(self.readyState)]"
@@ -249,8 +259,8 @@ public class PollingTransport : BaseTransport{
     
     func onPollingComplete(){
         self.polling = false
-        if let callback = self.pollingCompleteBlock {
-            callback()
+        if self.readyState == .Pausing {
+            self.tryPause()
         }
     }
     
@@ -315,12 +325,19 @@ public class PollingTransport : BaseTransport{
                 return (mutableURLRequest, nil)
             }))
                 .response({ [unowned self](request, response, data, err) -> Void in
-                    self.writable = true
-                    if err != nil{
-                        self.onError("error", description: "Failed sending data to server")
-                    }
-                    else{
-                        self.debug("Request send to server succeeded")
+                    dispatch_async(self.dispatchQueue()){
+                        self.writable = true
+                        if self.readyState == .Pausing {
+                            self.tryPause()
+                        }
+                        else {
+                            if err != nil{
+                                self.onError("error", description: "Failed sending data to server")
+                            }
+                            else{
+                                self.debug("Request send to server succeeded")
+                            }
+                        }
                     }
                 })
         }
@@ -329,7 +346,28 @@ public class PollingTransport : BaseTransport{
         }
     }
     
-    public override func pause(){}
+    public override func pause(){
+        debug("Pausing")
+        self.readyState = .Pausing
+        
+        if self.polling || !self.writable {
+            // If sending or reading data, then try to stop it in the poll and write method
+            debug("The transport still polling or writing, postpone the pause action")
+            return
+        }
+        else {
+            self.tryPause()
+        }
+    }
+
+    func tryPause(){
+        if !self.polling && self.writable {
+            debug("Paused")
+            self.readyState = .Paused
+            
+            self.delegate?.transportOnPause(self)
+        }
+    }
     
     // Construct the uri used for request
     public func uri() -> String{
@@ -357,7 +395,7 @@ public class PollingTransport : BaseTransport{
 
 public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     // The name of the transport
-    override var name : String{ get { return "websocket" }}
+    override public var name : String{ get { return "websocket" }}
     
     // The websocket instance
     var websocket : Websocket?
@@ -374,6 +412,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                 let uri = self.uri()
                 
                 if let nsurl = NSURL(string: uri) {
+                    self.debug("Connecting \(uri)")
                     var socket = Websocket(url: nsurl)
                     socket.delegate = self
                     socket.connect()

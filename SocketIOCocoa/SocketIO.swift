@@ -595,8 +595,11 @@ public class SocketIOClient: EngineSocketDelegate {
         }
     }
     
-    // End of EngineSocketDelegate
+    public func socketDidUpgraded(socket: EngineSocket) {
+        NSLog("Underlying socket upgraded")
+    }
     
+    // End of EngineSocketDelegate
 }
 
 public protocol SocketIOSocketDelegate {

@@ -61,7 +61,7 @@ public struct EnginePacket : Printable, DebugPrintable{
         return json
     }
     
-    public init(data: [Byte]?, type: PacketType, isBinary: Bool){
+    public init(data: [Byte]?, type: PacketType, isBinary: Bool = false){
         self.type = type
         self.data = data
         self.isBinary = isBinary
