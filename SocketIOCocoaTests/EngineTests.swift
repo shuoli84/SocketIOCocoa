@@ -297,7 +297,7 @@ class EnginePacketTest: XCTestCase{
             
             private func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
                 println("Recieved packet")
-                if packet.type == .Ping {
+                if packet.type == .Pong {
                     self.expectation?.fulfill()
                 }
             }

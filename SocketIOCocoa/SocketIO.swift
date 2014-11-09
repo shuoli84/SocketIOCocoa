@@ -578,6 +578,10 @@ public class SocketIOClient: EngineSocketDelegate {
         }
     }
     
+    public func socketOnPacket(socket: EngineSocket, packet: EnginePacket){
+        // We have no interest in packet
+    }
+    
     public func socketOnError(socket: EngineSocket, error: String, description: String?) {
         dispatch_async(self.dispatchQueue){
             [unowned self] () -> Void in

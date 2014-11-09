@@ -8,6 +8,9 @@ public protocol EngineSocketDelegate: class{
     // Called when the socket state is Closed
     func socketOnClose(socket: EngineSocket)
     
+    // Called when the socket received packet
+    func socketOnPacket(socket: EngineSocket, packet: EnginePacket)
+    
     // Called when there is a message decoded
     func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool)
     
@@ -149,6 +152,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                 self.setTransport(&transport)
                 transport.open()
             }
+            
             else{
                 self.debug("Not able to create transport")
             }
@@ -168,6 +172,8 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     public func transportOnPacket(transport: Transport, packet: EnginePacket) {
         if self.readyState == .Open || self.readyState == .Opening{
             info("Receive: [\(packet.description)]")
+            
+            self.delegate?.socketOnPacket(self, packet:packet)
             
             switch packet.type{
             case .Open:
