@@ -372,6 +372,9 @@ public class SocketIOClient: EngineSocketDelegate {
     var namespaces: [String: SocketIOSocket] = [:]
     var connectedSockets: [SocketIOSocket] = []
     
+    // Custom http headers
+    public var headers: [String: String] = [:]
+    
     
     // How many attempts to reconnect. nil for infinite
     var reconnectAttempts: Int?
@@ -439,6 +442,8 @@ public class SocketIOClient: EngineSocketDelegate {
         NSLog("[SocketIOClient] Opening")
         
         self.engineSocket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: self.transports, upgrade: true, config: [:])
+        
+        self.engineSocket!.headers = self.headers
         
         self.engineSocket!.delegate = self
         self.readyState = .Opening

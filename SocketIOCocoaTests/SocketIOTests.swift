@@ -313,6 +313,7 @@ class SocketIOCocoaTests: XCTestCase {
         let uri = "http://localhost:8001/socket.io/"
         // Open socket and client together
         var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        client.headers = ["Test-Header": "Hello"]
         
         // The echo namespace is defined in socketio server
         var expectation = self.expectationWithDescription("Socket open")

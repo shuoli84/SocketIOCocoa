@@ -63,6 +63,9 @@ public protocol Transport: class {
     // The name of the transport
     var name: String { get }
     
+    // Headers for request
+    var headers: [String: String] { get set }
+    
     // Delegate
     weak var delegate: EngineTransportDelegate? { get set }
     func setDelegate(delegate: EngineTransportDelegate?)
@@ -89,6 +92,9 @@ public class BaseTransport: Logger, Transport {
     
     // Port
     var port: String
+    
+    // Headers
+    public var headers: [String: String] = [:]
     
     // Flag indicates whether current transport is writable
     public var writable: Bool = false
@@ -218,6 +224,7 @@ public class PollingTransport : BaseTransport{
         debug("polling \(uri)")
         
         self.polling = true
+        Manager.sharedInstance.session.configuration.HTTPAdditionalHeaders = self.headers
         self.pollingRequest = request(.GET, uri)
             .response { (request, response, data, error) -> Void in
                 dispatch_async(self.dispatchQueue()){ ()-> Void in
@@ -305,6 +312,7 @@ public class PollingTransport : BaseTransport{
             self.writable = false
             let encoded = EngineParser.encodePayload(packets)
             
+            Manager.sharedInstance.session.configuration.HTTPAdditionalHeaders = self.headers
             self.postingRequest = request(.POST, self.uri(), parameters: ["data": encoded], encoding: .Custom({
                 (URLRequest: URLRequestConvertible, parameters: [String: AnyObject]?) -> (NSURLRequest, NSError?) in
                 var mutableURLRequest: NSMutableURLRequest! = URLRequest.URLRequest.mutableCopy() as NSMutableURLRequest
@@ -402,6 +410,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                 if let nsurl = NSURL(string: uri) {
                     self.debug("Connecting \(uri)")
                     var socket = Websocket(url: nsurl)
+                    socket.headers = self.headers
                     socket.delegate = self
                     socket.connect()
                     self.websocket = socket
