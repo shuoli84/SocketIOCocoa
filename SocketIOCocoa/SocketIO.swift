@@ -365,7 +365,13 @@ public enum SocketIOClientReadyState: Int, Printable {
 
 public class SocketIOClient: EngineSocketDelegate {
     public var uri: String
+    var host: String
+    var path: String
+    var port: String
+    var secure: Bool
+    
     var transports: [String]
+    var upgrade: Bool
     var readyState: SocketIOClientReadyState = .Closed
     var autoConnect: Bool
     var autoReconnect: Bool
@@ -402,7 +408,13 @@ public class SocketIOClient: EngineSocketDelegate {
         reconnect: Bool = true, reconnectAttempts: Int? = nil, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
         timeout: Int = 30){
             self.uri = uri
+            var url = NSURL(string: uri)
+            self.host = url!.host!
+            self.path = url!.path!
+            self.port = String(Int(url!.port!))
+            self.secure = url!.scheme == "wss" || url!.scheme == "https"
             self.transports = transports
+            self.upgrade = transports.count > 1
             self.autoConnect = autoConnect
             self.autoReconnect = reconnect
             self.reconnectAttempts = reconnectAttempts
@@ -441,7 +453,7 @@ public class SocketIOClient: EngineSocketDelegate {
         
         NSLog("[SocketIOClient] Opening")
         
-        self.engineSocket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: self.transports, upgrade: true, config: [:])
+        self.engineSocket = EngineSocket(host: self.host, port: self.port, path: self.path, secure: self.secure, transports: self.transports, upgrade: self.upgrade, config: [:])
         
         self.engineSocket!.headers = self.headers
         

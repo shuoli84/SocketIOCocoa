@@ -383,6 +383,10 @@ public class PollingTransport : BaseTransport{
             port = ":\(self.port)"
         }
         
+        if !self.path.hasSuffix("/") {
+            self.path += "/"
+        }
+        
         let queryString = query.urlEncodedQueryStringWithEncoding(NSUTF8StringEncoding)
         let uri = "\(schema)://\(self.host)\(port)\(self.path)?\(queryString)"
         return uri
@@ -457,6 +461,10 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
         var port = ""
         if self.port != "" && (self.port != "80" && schema == "ws") || (self.port != "443" && schema == "wss") {
             port = ":\(self.port)"
+        }
+        
+        if !self.path.hasSuffix("/") {
+            self.path += "/"
         }
         
         let queryString = query.urlEncodedQueryStringWithEncoding(NSUTF8StringEncoding)
