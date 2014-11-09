@@ -121,8 +121,8 @@ class SocketIOCocoaTests: XCTestCase {
                 NSLog("Client on connect timeout")
             }
             
-            private func clientOnError(client: SocketIOClient, error: String, description: String) {
-                NSLog("Client on Erorr %s [%s]", error, description)
+            private func clientOnError(client: SocketIOClient, error: String, description: String?) {
+                NSLog("Client on Erorr \(error) [\(description)]")
             }
             private func clientOnOpen(client: SocketIOClient) {
                 NSLog("Client on Open")
@@ -130,8 +130,8 @@ class SocketIOCocoaTests: XCTestCase {
                 self.expectation = nil // prevent refulfill
             }
             private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {}
-            private func clientReconnectionError(client: SocketIOClient, error: String, description: String) {
-                NSLog("Client reconnection Error %s [%s]", error, description)
+            private func clientReconnectionError(client: SocketIOClient, error: String, description: String?) {
+                NSLog("Client reconnection Error \(error) [\(description)]")
             }
             private func clientReconnectionFailed(client: SocketIOClient) {
                 NSLog("Client reconnection failed")
@@ -177,8 +177,8 @@ class SocketIOCocoaTests: XCTestCase {
                 NSLog("Client on connect timeout")
             }
             
-            private func clientOnError(client: SocketIOClient, error: String, description: String) {
-                NSLog("Client on Erorr %s [%s]", error, description)
+            private func clientOnError(client: SocketIOClient, error: String, description: String?) {
+                NSLog("Client on Erorr \(error) [\(description)]")
             }
             private func clientOnOpen(client: SocketIOClient) {
                 NSLog("Client on Open")
@@ -187,8 +187,8 @@ class SocketIOCocoaTests: XCTestCase {
                 NSLog("Client got data")
                 self.expectation?.fulfill()
             }
-            private func clientReconnectionError(client: SocketIOClient, error: String, description: String) {
-                NSLog("Client reconnection Error %s [%s]", error, description)
+            private func clientReconnectionError(client: SocketIOClient, error: String, description: String?) {
+                NSLog("Client reconnection Error \(error) \(description)")
             }
             private func clientReconnectionFailed(client: SocketIOClient) {
                 NSLog("Client reconnection failed")
@@ -294,6 +294,7 @@ class SocketIOCocoaTests: XCTestCase {
             private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
                 NSLog("Socket on Event \(event), data \(data)")
                 self.expectation?.fulfill()
+                self.expectation = nil
             }
             
             private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {

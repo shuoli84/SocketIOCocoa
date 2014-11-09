@@ -342,12 +342,12 @@ public protocol SocketIOClientDelegate {
     func clientReconnectionFailed(client: SocketIOClient)
     
     // Called when any error happened in reconnection
-    func clientReconnectionError(client: SocketIOClient, error: String, description: String)
+    func clientReconnectionError(client: SocketIOClient, error: String, description: String?)
     
     // Called when the client reconnected
     func clientReconnected(client: SocketIOClient)
     
-    func clientOnError(client: SocketIOClient, error: String, description: String)
+    func clientOnError(client: SocketIOClient, error: String, description: String?)
     func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket)
 }
 
@@ -578,7 +578,7 @@ public class SocketIOClient: EngineSocketDelegate {
         }
     }
     
-    public func socketOnError(socket: EngineSocket, error: String, description: String) {
+    public func socketOnError(socket: EngineSocket, error: String, description: String?) {
         dispatch_async(self.dispatchQueue){
             [unowned self] () -> Void in
             if self.reconnecting {

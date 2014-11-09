@@ -1,14 +1,5 @@
-//
-//  EngineTransport.swift
-//  SocketIOCocoa
-//
-//  Created by LiShuo on 14/11/8.
-//  Copyright (c) 2014年 LiShuo. All rights reserved.
-//
-
 import Foundation
 
-// Mark Engine Transport
 
 public enum TransportReadyState: Printable, DebugPrintable{
     case Init, Open, Opening, Closing, Closed, Pausing, Paused
@@ -30,12 +21,10 @@ public enum TransportReadyState: Printable, DebugPrintable{
     }
 }
 
-
 /*
 Concurrency model for transport. Due to the shared state between operations, all state changing method should be called
 in Socket's queue, including EngineIO level and SocketIO level.
 */
-
 public protocol EngineTransportDelegate: class {
     // Called when error occured
     func transportOnError(transport: Transport, error: String, withDescription description: String)
@@ -267,9 +256,7 @@ public class PollingTransport : BaseTransport{
     public override func onData(data: NSData) {
         debug("polling got data \(Converter.nsdataToByteArray(data).description)")
         
-        let packets = EngineParser.decodePayload(data)
-        
-        for packet in packets{
+        for packet in EngineParser.decodePayload(data){
             if self.readyState == .Opening {
                 debug("Polling got data back, set state to Open")
                 self.readyState = .Open
@@ -288,18 +275,19 @@ public class PollingTransport : BaseTransport{
                 }
             }
             else{
-                debug("Delegate not set, ignore packet")
+                debug("Delegate not set, ignore packet \(packet)")
             }
             
-            if self.readyState == .Open && self.sid == nil{
-                debug("Sid is none after connection openned")
-                return
-            }
-            
-            if self.readyState != .Closed {
-                self.polling = false
-                self.onPollingComplete()
-            }
+        }
+        
+        if self.readyState == .Open && self.sid == nil{
+            debug("Sid is none after connection openned")
+            return
+        }
+    
+        if self.readyState != .Closed {
+            self.polling = false
+            self.onPollingComplete()
         }
     }
     

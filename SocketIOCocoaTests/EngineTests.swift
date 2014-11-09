@@ -231,7 +231,7 @@ class EnginePacketTest: XCTestCase{
             
             private func socketOnOpen(socket: EngineSocket) { }
             private func socketOnClose(socket: EngineSocket) { }
-            private func socketOnError(socket: EngineSocket, error: String, description: String) {
+            private func socketOnError(socket: EngineSocket, error: String, description: String?) {
             }
             private func socketDidUpgraded(socket: EngineSocket) { }
         }
@@ -266,7 +266,7 @@ class EnginePacketTest: XCTestCase{
             
             private func socketOnOpen(socket: EngineSocket) { }
             private func socketOnClose(socket: EngineSocket) { }
-            private func socketOnError(socket: EngineSocket, error: String, description: String) { }
+            private func socketOnError(socket: EngineSocket, error: String, description: String?) { }
             private func socketDidUpgraded(socket: EngineSocket) {
                 println("Upgraded")
                 self.expectation?.fulfill()

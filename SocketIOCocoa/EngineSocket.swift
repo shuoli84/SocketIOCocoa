@@ -12,7 +12,7 @@ public protocol EngineSocketDelegate: class{
     func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool)
     
     // Called when there is an error occured
-    func socketOnError(socket: EngineSocket, error: String, description: String)
+    func socketOnError(socket: EngineSocket, error: String, description: String?)
     
     // Called when there is an error occured
     func socketDidUpgraded(socket: EngineSocket)
@@ -87,6 +87,12 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     // Ping timeout
     var pingTimeout: Int = 30000
+    
+    // The timer which triggers ping event
+    var pingTimer: NSTimer?
+
+    // The timer which checks whether ping timeout
+    var pingTimeoutCheckTimer: NSTimer?
     
     // The write queue
     var writeQueue: [EnginePacket] = []
@@ -204,7 +210,10 @@ public class EngineSocket: Logger, EngineTransportDelegate{
         }
     }
     
-    public func transportOnError(transport: Transport, error: String, withDescription description: String) { }
+    public func transportOnError(transport: Transport, error: String, withDescription description: String) {
+        debug("Tranport got error \(error) \(description)")
+        self.onError(error, reason: description)
+    }
     
     public func transportOnClose(transport: Transport) {
         if self.readyState == .Closing {
@@ -219,7 +228,9 @@ public class EngineSocket: Logger, EngineTransportDelegate{
         }
     }
     
-    public func transportOnOpen(transport: Transport) { }
+    public func transportOnOpen(transport: Transport) {
+        debug("Underlying transport opened")
+    }
 
     public func transportOnPause(transport: Transport) {
         // If the transport pasued, lets see whether it is in upgrading, if yes, then fire the event to the upgrade delegate to finish
@@ -263,7 +274,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
         
         self.onOpen()
         
-        if self.readyState == .Closed{
+        if self.readyState != .Closed{
             self.setPing()
         }
     }
@@ -288,11 +299,33 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     func onError(message: String, reason: String? = nil){
-        
+        debug("Close on error \(message) \(reason)")
+        self.delegate?.socketOnError(self, error: message, description: reason)
+        self.close()
     }
     
     func setPing(){
+        debug("Ping")
         
+        if self.pingTimer != nil {
+            self.pingTimer?.invalidate()
+        }
+        
+        if self.pingTimeoutCheckTimer != nil {
+            self.pingTimeoutCheckTimer?.invalidate()
+        }
+     
+        let pingDelay: Double = Double(self.pingInterval / 1000)
+        self.pingTimer = NSTimer(timeInterval: pingDelay, target: self, selector: "ping", userInfo: nil, repeats: false)
+    }
+    
+    func ping(){
+        self.send(.Ping)
+        self.pingTimeoutCheckTimer = NSTimer(timeInterval: Double(self.pingTimeout/1000), target: self, selector: "timeout", userInfo: nil, repeats: false)
+    }
+    
+    func timeout(){
+        self.onError("timeout", reason: "Ping timeout")
     }
     
     /**
@@ -310,7 +343,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     // send packet and data with a callback
-    func send(packetType: PacketType, data: [Byte]? = nil, isBinary: Bool, callback: (()->Void)? = nil){
+    func send(packetType: PacketType, data: [Byte]? = nil, isBinary: Bool = false, callback: (()->Void)? = nil){
         let packet = EnginePacket(data: data, type:packetType, isBinary: isBinary)
         self.packet(packet, callback: callback)
     }
@@ -434,6 +467,7 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
         self.prevTransport.close()
     }
 
+    // not interested in pause
     func transportOnPause(transport: Transport){}
     
     func transportOnError(transport: Transport, error: String, withDescription description: String){
