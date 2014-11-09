@@ -282,4 +282,41 @@ class EnginePacketTest: XCTestCase{
         
         XCTAssert(socket.transport?.name == "websocket")
     }
+    
+    // Root cause is the transport created just be released. No strong reference to it. We need to find a place
+    // To hold it. :(
+    func testEngineSocketPing(){
+        var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
+        
+        var expectation = self.expectationWithDescription("ping")
+        
+        class TestSocketDelegate: EngineSocketDelegate{
+            var expectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnPacket(socket: EngineSocket, packet: EnginePacket) {
+                println("Recieved packet")
+                if packet.type == .Ping {
+                    self.expectation?.fulfill()
+                }
+            }
+            
+            private func socketOnData(socket: EngineSocket, data: [Byte], isBinary: Bool) {
+                println(data)
+            }
+            
+            private func socketOnOpen(socket: EngineSocket) { }
+            private func socketOnClose(socket: EngineSocket) { }
+            private func socketOnError(socket: EngineSocket, error: String, description: String?) { }
+            private func socketDidUpgraded(socket: EngineSocket) { }
+        }
+        
+        var delegate = TestSocketDelegate()
+        delegate.expectation = expectation
+        socket.delegate = delegate
+        socket.open()
+        
+        self.waitForExpectationsWithTimeout(4000, handler: nil)
+    }
 }

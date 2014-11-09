@@ -88,12 +88,14 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     // Ping timeout
     var pingTimeout: Int = 30000
     
-    // The timer which triggers ping event
-    var pingTimer: NSTimer?
-
-    // The timer which checks whether ping timeout
-    var pingTimeoutCheckTimer: NSTimer?
+    // Last ping sent time
+    var pingSentAt: NSDate?
     
+    // last pong received time
+    var pongRecvAt: NSDate?
+    
+    // Last pong received time
+   
     // The write queue
     var writeQueue: [EnginePacket] = []
     
@@ -192,7 +194,8 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                     debug("No data on Message packet, ignore")
                 }
             case .Pong:
-                break
+                debug("Pong from server")
+                self.pongRecvAt = NSDate()
             case .Error:
                 if let data = packet.data {
                     self.onError("error", reason: Converter.bytearrayToNSString(data))
@@ -218,13 +221,11 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     public func transportOnClose(transport: Transport) {
         if self.readyState == .Closing {
             debug("The transport closed as expected")
-            
-            self.readyState = .Closed
-            self.delegate?.socketOnClose(self)
+            self.close()
         }
         else{
             debug("The transport closed unexpected")
-            self.delegate?.socketOnClose(self)
+            self.close()
         }
     }
     
@@ -265,11 +266,11 @@ public class EngineSocket: Logger, EngineTransportDelegate{
         }
         
         if let pingInterval = data["pingInterval"]?.integerValue {
-            self.pingInterval = pingInterval
+            self.pingInterval = pingInterval / 1000
         }
         
         if let pingTimeout = data["pingTimeout"]?.integerValue {
-            self.pingTimeout = pingTimeout
+            self.pingTimeout = pingTimeout / 1000
         }
         
         self.onOpen()
@@ -305,27 +306,61 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     func setPing(){
-        debug("Ping")
-        
-        if self.pingTimer != nil {
-            self.pingTimer?.invalidate()
+        debug("Setting up ping and reset timeout")
+       
+        self.delay(Double(self.pingInterval)){
+            [unowned self] () -> Void in
+            
+            var shouldSent = true
+            if let pingSent = self.pingSentAt {
+                let seconds = NSDate().secondsAfterDate(pingSent)
+                if seconds < self.pingInterval{
+                    shouldSent = false
+                }
+            }
+
+            if shouldSent {
+                self.ping()
+                self.pingSentAt = NSDate()
+                
+                self.setPing()
+            }
+            else{
+                self.debug("Ping just sent no long ago, skip")
+            }
         }
         
-        if self.pingTimeoutCheckTimer != nil {
-            self.pingTimeoutCheckTimer?.invalidate()
-        }
-     
-        let pingDelay: Double = Double(self.pingInterval / 1000)
-        self.pingTimer = NSTimer(timeInterval: pingDelay, target: self, selector: "ping", userInfo: nil, repeats: false)
+        // Reset the last pong recv time to prevent
+        self.pongRecvAt = NSDate()
     }
     
     func ping(){
+        debug("Sending Ping")
         self.send(.Ping)
-        self.pingTimeoutCheckTimer = NSTimer(timeInterval: Double(self.pingTimeout/1000), target: self, selector: "timeout", userInfo: nil, repeats: false)
-    }
     
-    func timeout(){
-        self.onError("timeout", reason: "Ping timeout")
+        self.delay(Double(self.pingTimeout)){
+            [unowned self] () -> Void in
+
+            if self.pingSentAt == nil{
+                // If no ping sent, no timeout
+                return
+            }
+            else{
+                if NSDate().secondsAfterDate(self.pingSentAt!) < self.pingTimeout {
+                    // If ping sent, but not timeout
+                    return
+                }
+
+                if let pongRecv = self.pongRecvAt {
+                    if pongRecv.secondsAfterDate(self.pingSentAt!) >= 0 {
+                        // If pong recved after ping sent
+                        return
+                    }
+                }
+            }
+
+            self.onError("timeout", reason: "Ping timeout")
+        }
     }
     
     /**
@@ -387,6 +422,15 @@ public class EngineSocket: Logger, EngineTransportDelegate{
             self.writeCallbackQueue.append(callback)
             self.flush()
         }
+    }
+    
+    func delay(delay:Double, closure:()->()) {
+        dispatch_after(
+            dispatch_time(
+                DISPATCH_TIME_NOW,
+                Int64(delay * Double(NSEC_PER_SEC))
+            ),
+            self.queue, closure)
     }
     
     public override func logPrefix() -> String{

@@ -483,7 +483,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func websocketDidReceiveMessage(text: String) {
         dispatch_async(self.dispatchQueue()){
-            self.debug("Received test message \(text)")
+            self.debug("Received text message \(text)")
             self.onData(Converter.nsstringToNSData(text))
         }
     }
@@ -492,14 +492,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
         debug("Websocket write error")
     }
     // END Websocket delegate
-    
-    public override func onOpen(){
-        self.readyState = .Open
-        if let delegate = self.delegate {
-            delegate.transportOnOpen(self)
-        }
-    }
-    
+   
     // The method is running on the queue
     public override func onData(data: NSData){
         let packet = EnginePacket(decodeFromData: data)

@@ -20,6 +20,7 @@
 		9C8746131A0782840026CE61 /* Dollar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746101A0782840026CE61 /* Dollar.swift */; };
 		9C8746141A0782840026CE61 /* SwifterSnippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746111A0782840026CE61 /* SwifterSnippet.swift */; };
 		9C8746161A07C50D0026CE61 /* starscream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8746151A07C50D0026CE61 /* starscream.swift */; };
+		9CB41BF01A0F68F800AC61B6 /* AF-NSDate-Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB41BEF1A0F68F800AC61B6 /* AF-NSDate-Extension.swift */; };
 		9CC4DE761A0E102A00BD6DD9 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -49,6 +50,7 @@
 		9C8746101A0782840026CE61 /* Dollar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Dollar.swift; path = vender/Dollar.swift; sourceTree = "<group>"; };
 		9C8746111A0782840026CE61 /* SwifterSnippet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SwifterSnippet.swift; path = vender/SwifterSnippet.swift; sourceTree = "<group>"; };
 		9C8746151A07C50D0026CE61 /* starscream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = starscream.swift; sourceTree = "<group>"; };
+		9CB41BEF1A0F68F800AC61B6 /* AF-NSDate-Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "AF-NSDate-Extension.swift"; sourceTree = "<group>"; };
 		9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
 		C683D0750A5BED5403E25D41 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		CD168E7B21F68EBF458D587D /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
@@ -152,6 +154,7 @@
 				9C8746101A0782840026CE61 /* Dollar.swift */,
 				9C8746111A0782840026CE61 /* SwifterSnippet.swift */,
 				9C8746151A07C50D0026CE61 /* starscream.swift */,
+				9CB41BEF1A0F68F800AC61B6 /* AF-NSDate-Extension.swift */,
 			);
 			name = Vender;
 			sourceTree = "<group>";
@@ -313,6 +316,7 @@
 				9C8746131A0782840026CE61 /* Dollar.swift in Sources */,
 				9C29C7CD1A0E685E0036EDB3 /* EngineTransport.swift in Sources */,
 				9C8746141A0782840026CE61 /* SwifterSnippet.swift in Sources */,
+				9CB41BF01A0F68F800AC61B6 /* AF-NSDate-Extension.swift in Sources */,
 				9C8746161A07C50D0026CE61 /* starscream.swift in Sources */,
 				9C29C7C91A0E67BF0036EDB3 /* Utils.swift in Sources */,
 			);
