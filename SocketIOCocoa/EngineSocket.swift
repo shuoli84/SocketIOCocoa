@@ -230,12 +230,12 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     public func transportOnClose(transport: Transport) {
         if self.readyState == .Closing {
             debug("The transport closed as expected")
-            self.close()
         }
         else{
             debug("The transport closed unexpected")
-            self.close()
         }
+        self.readyState = .Closed
+        self.delegate?.socketOnClose(self)
     }
     
     public func transportOnOpen(transport: Transport) {
