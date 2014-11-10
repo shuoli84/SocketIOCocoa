@@ -208,7 +208,7 @@ public class PollingTransport : BaseTransport{
     }
     
     public override func open(){
-        dispatch_async(self.dispatchQueue(), { () -> Void in
+        dispatch_async(self.dispatchQueue(), {
             if self.readyState == .Closed || self.readyState == .Init{
                 self.readyState = .Opening
                 // First poll sends a handshake request
@@ -227,7 +227,11 @@ public class PollingTransport : BaseTransport{
         Manager.sharedInstance.session.configuration.HTTPAdditionalHeaders = self.headers
         self.pollingRequest = request(.GET, uri)
             .response { (request, response, data, error) -> Void in
-                dispatch_async(self.dispatchQueue()){ ()-> Void in
+                dispatch_async(self.dispatchQueue()){
+                    if self.readyState == .Closing || self.readyState == .Closed {
+                        return
+                    }
+                    
                     if response?.statusCode >= 200 && response?.statusCode < 300 {
                         self.debug("Request succeeded")
                         
@@ -291,7 +295,7 @@ public class PollingTransport : BaseTransport{
             debug("Sid is none after connection openned")
             return
         }
-    
+        
         if self.readyState != .Closed {
             self.polling = false
             self.onPollingComplete()
@@ -319,23 +323,26 @@ public class PollingTransport : BaseTransport{
                 mutableURLRequest.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
                 mutableURLRequest.HTTPBody = parameters!["data"] as? NSData!
                 return (mutableURLRequest, nil)
-            }))
-                .response({ [unowned self](request, response, data, err) -> Void in
-                    dispatch_async(self.dispatchQueue()){
-                        self.writable = true
-                        if self.readyState == .Pausing {
-                            self.tryPause()
+            })).response({
+                (request, response, data, err) -> Void in
+                dispatch_async(self.dispatchQueue()){
+                    if self.readyState == .Closed || self.readyState == .Closing {
+                        return
+                    }
+                    
+                    self.writable = true
+                    if self.readyState == .Pausing {
+                        self.tryPause()
+                    }
+                    else {
+                        if err != nil{
+                            self.onError("error", description: "Failed sending data to server")
                         }
-                        else {
-                            if err != nil{
-                                self.onError("error", description: "Failed sending data to server")
-                            }
-                            else{
-                                self.debug("Request send to server succeeded")
-                            }
+                        else{
+                            self.debug("Request send to server succeeded")
                         }
                     }
-                })
+                }})
         }
         else{
             self.debug("Transport not open")
@@ -355,7 +362,7 @@ public class PollingTransport : BaseTransport{
             self.tryPause()
         }
     }
-
+    
     func tryPause(){
         if !self.polling && self.writable {
             debug("Paused")
@@ -405,7 +412,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     }
     
     override public func open(){
-        dispatch_async(self.dispatchQueue(), { () -> Void in
+        dispatch_async(self.dispatchQueue(), {
             if self.readyState == .Closed || self.readyState == .Init{
                 self.readyState = .Opening
                 
@@ -434,6 +441,10 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     override public func write(packets: [EnginePacket]){
         dispatch_async(self.dispatchQueue()){
+            if self.readyState == .Closed || self.readyState == .Closing {
+                return
+            }
+            
             for packet in packets{
                 if packet.isBinary{
                     self.websocket?.writeData(packet.encode())
@@ -493,6 +504,9 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func websocketDidReceiveData(data: NSData) {
         dispatch_async(self.dispatchQueue()){
+            if self.readyState == .Closed || self.readyState == .Closing {
+                return
+            }
             self.debug("Received binary message \(data)")
             self.onData(data)
         }
@@ -500,6 +514,9 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func websocketDidReceiveMessage(text: String) {
         dispatch_async(self.dispatchQueue()){
+            if self.readyState == .Closed || self.readyState == .Closing {
+                return
+            }
             self.debug("Received text message \(text)")
             self.onData(Converter.nsstringToNSData(text))
         }
@@ -509,7 +526,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
         debug("Websocket write error")
     }
     // END Websocket delegate
-   
+    
     // The method is running on the queue
     public override func onData(data: NSData){
         let packet = EnginePacket(decodeFromData: data)

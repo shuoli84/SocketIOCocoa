@@ -1,11 +1,11 @@
 /**************************************************************
-       _____            __        __  ________
-      / ___/____  _____/ /_____  / /_/  _/ __ \
-      \__ \/ __ \/ ___/ //_/ _ \/ __// // / / /
-     ___/ / /_/ / /__/ ,< /  __/ /__/ // /_/ /
-    /____/\____/\___/_/|_|\___/\__/___/\____/
+_____            __        __  ________
+/ ___/____  _____/ /_____  / /_/  _/ __ \
+\__ \/ __ \/ ___/ //_/ _ \/ __// // / / /
+___/ / /_/ / /__/ ,< /  __/ /__/ // /_/ /
+/____/\____/\___/_/|_|\___/\__/___/\____/
 
-    SocketIO 1.0 Swift client.
+SocketIO 1.0 Swift client.
 
 Introduction
 -------------
@@ -17,13 +17,13 @@ The data transportation layer. Polling, websocket, wrapped in this layer and exp
 2. SocketIO
 The SocketIO protocol layer, namespace, multiplexing etc.
 
-We are doing the same here. We support xhr polling and websocket transports. Utilize alamofire and starscream to do the heavy lifting 
+We are doing the same here. We support xhr polling and websocket transports. Utilize alamofire and starscream to do the heavy lifting
 on underlying request and socket.
 
 Installation
 -------------
 Due to the broken swift dependency management, I include all my dependencies by copy and paste. Until Cocoapod swift support become mature,
-I suggest you do so. 
+I suggest you do so.
 
 Following files are from external depot (Go and Search the name), they located under Vender folder:
 alamofire.swift
@@ -38,8 +38,8 @@ Copy above to your project for now.
 
 Concurrency model
 -------------
-The client has many state, which requires a consistent and elegant concurrency model. GCD here. All state involved 
-operations should be dispatched on the dedicated queue, we also call callbacks in this queue, feel free to dispatch 
+The client has many state, which requires a consistent and elegant concurrency model. GCD here. All state involved
+operations should be dispatched on the dedicated queue, we also call callbacks in this queue, feel free to dispatch
 it in the callback.
 
 Classes
@@ -253,7 +253,7 @@ public struct SocketIOPacket: Printable{
                 data = Converter.bytearrayToNSString(bodyBuffer)
             }
         }
-       
+        
         self.init(type: packetType!, data: data, nsp: nsp, id: id, attachments: attachment)
     }
     
@@ -363,7 +363,7 @@ public enum SocketIOClientReadyState: Int, Printable {
     }
 }
 
-public class SocketIOClient: EngineSocketDelegate {
+public class SocketIOClient: NSObject, EngineSocketDelegate {
     public var uri: String
     var host: String
     var path: String
@@ -383,7 +383,7 @@ public class SocketIOClient: EngineSocketDelegate {
     
     
     // How many attempts to reconnect. nil for infinite
-    var reconnectAttempts: Int?
+    var reconnectAttempts: Int
     
     var reconnectDelay: Int
     var reconnectDelayMax: Int
@@ -402,16 +402,21 @@ public class SocketIOClient: EngineSocketDelegate {
     
     var dispatchQueue: dispatch_queue_t = {
         return dispatch_queue_create("com.menic.SocketIOClient-queue", DISPATCH_QUEUE_SERIAL)
-    }()
+        }()
     
-    public init(uri: String, transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
-        reconnect: Bool = true, reconnectAttempts: Int? = nil, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
+    @objc public init(uri: String, transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
+        reconnect: Bool = true, reconnectAttempts: Int = 0, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
         timeout: Int = 30){
             self.uri = uri
             var url = NSURL(string: uri)
             self.host = url!.host!
             self.path = url!.path!
-            self.port = String(Int(url!.port!))
+            if url!.port != nil {
+                self.port = String(Int(url!.port!))
+            }
+            else{
+                self.port = ""
+            }
             self.secure = url!.scheme == "wss" || url!.scheme == "https"
             self.transports = transports
             self.upgrade = transports.count > 1
@@ -484,7 +489,7 @@ public class SocketIOClient: EngineSocketDelegate {
         
         self.attempts++
         
-        if self.reconnectAttempts != nil && self.attempts > self.reconnectAttempts {
+        if self.reconnectAttempts != 0 && self.attempts > self.reconnectAttempts {
             NSLog("reconnect failed")
             self.delegate?.clientReconnectionFailed(self)
             self.reconnecting = false
@@ -579,7 +584,7 @@ public class SocketIOClient: EngineSocketDelegate {
         else{
             socketIOPacket = self.decoder.addString(data)
         }
-       
+        
         if socketIOPacket != nil {
             self.delegate?.clientOnPacket(self, packet: socketIOPacket!)
             
@@ -637,7 +642,7 @@ public protocol SocketIOSocketDelegate {
     func socketOnError(socket: SocketIOSocket, error: String, description: String?)
 }
 
-public class SocketIOSocket{
+public class SocketIOSocket: NSObject {
     unowned var client: SocketIOClient
     var namespace: String
     var messageIdCounter: Int = 0

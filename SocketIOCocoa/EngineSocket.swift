@@ -87,7 +87,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     // Transport instance
     public var transport: Transport?
-   
+    
     // Ping interval
     var pingInterval: Int = 30000
     
@@ -101,7 +101,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     var pongRecvAt: NSDate?
     
     // Last pong received time
-   
+    
     // The write queue
     var writeQueue: [EnginePacket] = []
     
@@ -147,7 +147,6 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     public func open(){
         assert(transports.count != 0)
         dispatch_async(self.queue){
-            [unowned self] () -> Void in
             self.readyState = .Opening
             
             let transportName = $.first(self.transports)!
@@ -155,7 +154,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                 self.setTransport(&transport)
                 transport.open()
             }
-            
+                
             else{
                 self.debug("Not able to create transport")
             }
@@ -164,10 +163,14 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     public func close(){
         // Trigger the close the underlying transport
-        dispatch_async(self.queue){
-            [unowned self] () -> Void in
-            self.readyState = .Closing
-            self.transport?.close()
+        
+        if self.readyState != .Closed || self.readyState != .Closing {
+            dispatch_async(self.queue){
+                if self.readyState != .Closed || self.readyState != .Closing {
+                    self.readyState = .Closing
+                    self.transport?.close()
+                }
+            }
         }
     }
     
@@ -241,7 +244,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     public func transportOnOpen(transport: Transport) {
         debug("Underlying transport opened")
     }
-
+    
     public func transportOnPause(transport: Transport) {
         // If the transport pasued, lets see whether it is in upgrading, if yes, then fire the event to the upgrade delegate to finish
         // The upgrading logic
@@ -316,7 +319,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     func setPing(){
         debug("Setting up ping and reset timeout")
-       
+        
         self.delay(Double(self.pingInterval)){
             [unowned self] () -> Void in
             
@@ -327,7 +330,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                     shouldSent = false
                 }
             }
-
+            
             if shouldSent {
                 self.ping()
                 self.pingSentAt = NSDate()
@@ -346,10 +349,10 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     func ping(){
         debug("Sending Ping")
         self.send(.Ping)
-    
+        
         self.delay(Double(self.pingTimeout)){
             [unowned self] () -> Void in
-
+            
             if self.pingSentAt == nil{
                 // If no ping sent, no timeout
                 return
@@ -359,7 +362,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                     // If ping sent, but not timeout
                     return
                 }
-
+                
                 if let pongRecv = self.pongRecvAt {
                     if pongRecv.secondsAfterDate(self.pingSentAt!) >= 0 {
                         // If pong recved after ping sent
@@ -367,7 +370,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                     }
                 }
             }
-
+            
             self.onError("timeout", reason: "Ping timeout")
         }
     }
@@ -425,7 +428,6 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     func packet(packet: EnginePacket, callback: (()->Void)?){
         dispatch_async(self.queue){
-            [unowned self] () -> Void in
             self.debug("Enqueue packet")
             self.writeQueue.append(packet)
             self.writeCallbackQueue.append(callback)
@@ -468,7 +470,7 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
     override func logPrefix() -> String {
         return "[ProbeTransportDelegate][Failed:\(self.failed)]"
     }
-
+    
     func transportOnOpen(transport: Transport) {
         debug("Probing \(self.transportName)")
         
@@ -479,7 +481,7 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
         if self.failed {
             return
         }
-
+        
         if packet.type == .Pong {
             if let data = packet.data {
                 let message = Converter.bytearrayToNSString(data)
@@ -519,12 +521,12 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
         self.prevTransport.delegate = nil
         self.prevTransport.close()
     }
-
+    
     // not interested in pause
     func transportOnPause(transport: Transport){}
     
     func transportOnError(transport: Transport, error: String, withDescription description: String){
-       self.onError(transport)
+        self.onError(transport)
     }
     
     // Called when the transport closed
@@ -543,4 +545,3 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
         transport.close() 
     }
 }
-
