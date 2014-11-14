@@ -115,4 +115,5 @@ CREDIT
 =============
 
 Linbang 北京邻邦科技
-Shuo Li Twitter[shuoli84] ![Tip me](http//img.shields.io/gratipay/shuoli84.svg "Tip me")
+* **Twitter:** [@shuoli84](https://twitter.com/shuoli84)
+* **Tip me:** [Tip](https://gratipay.com/shuoli84/)
