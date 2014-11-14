@@ -5,11 +5,13 @@ The socket 1.0 client in Swift. It includes xhr polling and websocket transports
 
 This is a port from socketio.client, which means the code structure are quite similar.
 
-Motivation
+Motivation & Contribute
 =============
 
-For our startup project, We running socketio1.0 in our server, and needs a socketio 1.0 iOS client, I tried my best to find the 
-iOS client, but with no luck. 
+For our startup project, we running socketio1.0 in our server, and needs an iOS client. I tried my best to find the 
+iOS client, but with no luck.
+
+I am still dogfooding it, any issue report, pull request are welcomed.
 
 Installation
 =============
