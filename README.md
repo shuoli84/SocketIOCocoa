@@ -31,44 +31,52 @@ Swift
 
 Create a client
 
-    var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
-    client.open()
-    
+```swift 
+var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+client.open()
+```    
     
 Create a socket
-    
-    var socket = client.socket("namespace")
-    // Set a delegate on socket
-    
+
+```swift    
+var socket = client.socket("namespace")
+// Set a delegate on socket
+```
+
 The SocketIOSocketDelegate
 
-    @objc public protocol SocketIOSocketDelegate {
-        // Called when the socket received a low level packet
-        optional func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
-        
-        // Called when the socket received an event
-        func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
-        
-        // Called when the socket is open
-        func socketOnOpen(socket: SocketIOSocket)
-        
-        // Called when the socket is on error
-        func socketOnError(socket: SocketIOSocket, error: String, description: String?)
-    }
+```swift
+@objc public protocol SocketIOSocketDelegate {
+    // Called when the socket received a low level packet
+    optional func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
+    
+    // Called when the socket received an event
+    func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
+    
+    // Called when the socket is open
+    func socketOnOpen(socket: SocketIOSocket)
+    
+    // Called when the socket is on error
+    func socketOnError(socket: SocketIOSocket, error: String, description: String?)
+}
+```
 
 ObjC
 ---------
 
 Create a client
-
-    self.client = [[SocketIOClient alloc] initWithUri: @"http://<server ip>/socket.io/" transports:@[@"polling", @"websocket"] autoConnect:YES reconnect:YES reconnectAttempts:0 reconnectDelay:5 reconnectDelayMax:30 timeout:30];
-    [self.client open];
+```objc
+self.client = [[SocketIOClient alloc] initWithUri: @"http://<server ip>/socket.io/" transports:@[@"polling", @"websocket"] autoConnect:YES reconnect:YES reconnectAttempts:0 reconnectDelay:5 reconnectDelayMax:30 timeout:30];
+[self.client open];
+```
 
 Create a socket
 
-    self.apiSocket = [self.client socket:@"namespace"];
-    self.apiSocket.delegate = self;
-    
+```objc
+self.apiSocket = [self.client socket:@"namespace"];
+self.apiSocket.delegate = self;
+```
+
 The SocketIOSocketDelegate
 
 Socket received event with data
@@ -106,6 +114,5 @@ MIT
 CREDIT
 =============
 
-LINBANG
-
-北京邻邦科技
+Linbang 北京邻邦科技
+Shuo Li Twitter[shuoli84] ![Tip me](http//img.shields.io/gratipay/shuoli84.svg "Tip me")
