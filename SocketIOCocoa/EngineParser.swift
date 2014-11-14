@@ -1,12 +1,12 @@
 import Foundation
 
 /*
-    __            _             _____  ___
-   /__\ __   __ _(_)_ __   ___  \_   \/___\
-  /_\| '_ \ / _` | | '_ \ / _ \  / /\//  //
- //__| | | | (_| | | | | |  __/\/ /_/ \_//
- \__/|_| |_|\__, |_|_| |_|\___\____/\___/
-             |___/
+   __            _             _____  ___
+  /__\ __   __ _(_)_ __   ___  \_   \/___\
+ /_\| '_ \ / _` | | '_ \ / _ \  / /\//  //
+//__| | | | (_| | | | | |  __/\/ /_/ \_//
+\__/|_| |_|\__, |_|_| |_|\___\____/\___/
+            |___/
 
 Engine parser used to encode and decode packet for engineio level. Since we are running on iOS, so we pretty sure we
 can support binary, this parser only implemented the binary part. No base64 support.

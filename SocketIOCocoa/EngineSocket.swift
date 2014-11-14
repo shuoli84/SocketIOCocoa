@@ -318,10 +318,18 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     func setPing(){
+        if self.readyState == .Closed || self.readyState == .Closing {
+            debug("Skip the ping on closed socket")
+            return
+        }
+        
         debug("Setting up ping and reset timeout")
         
         self.delay(Double(self.pingInterval)){
-            [unowned self] () -> Void in
+            if self.readyState == .Closed || self.readyState == .Closing {
+                self.debug("Skip the ping on closed socket")
+                return
+            }
             
             var shouldSent = true
             if let pingSent = self.pingSentAt {

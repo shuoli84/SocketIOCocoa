@@ -492,7 +492,7 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     }
     
     public func websocketDidDisconnect(error: NSError?) {
-        debug("Websocket disconnected")
+        debug("Websocket disconnected \(error)")
         dispatch_async(self.dispatchQueue()){
             self.readyState = .Closed
             self.websocket = nil

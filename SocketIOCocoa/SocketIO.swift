@@ -175,7 +175,7 @@ public class BinaryParser {
     }
 }
 
-public struct SocketIOPacket: Printable{
+@objc public class SocketIOPacket: Printable{
     public var type: SocketIOPacketType
     public var data: AnyObject?
     public var nsp: String?
@@ -190,7 +190,7 @@ public struct SocketIOPacket: Printable{
         self.attachments = attachments
     }
     
-    public init(decodedFromString string: [Byte]){
+    public convenience init(decodedFromString string: [Byte]){
         var packetType = SocketIOPacketType(rawValue: string[0] - ASCII._0.rawValue)
         var attachment: Int = 0
         var nsp: String? = nil
@@ -470,7 +470,6 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
             NSLog("connect attempt will timeout after \(self.timeout) seconds")
             
             self.delay(Double(self.timeout)){
-                [unowned self]() -> Void in
                 if self.readyState != .Open {
                     NSLog("[SocketIOClient] connect timeout")
                     self.engineSocket?.delegate = nil
@@ -628,9 +627,9 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     // End of EngineSocketDelegate
 }
 
-public protocol SocketIOSocketDelegate {
+@objc public protocol SocketIOSocketDelegate {
     // Called when the socket received a low level packet
-    func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
+    optional func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
     
     // Called when the socket received an event
     func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
@@ -699,7 +698,7 @@ public class SocketIOSocket: NSObject {
     }
     
     public func receivePacket(packet: SocketIOPacket){
-        self.delegate?.socketOnPacket(self, packet: packet)
+        self.delegate?.socketOnPacket?(self, packet: packet)
         
         switch packet.type {
         case .Connect:

@@ -303,6 +303,8 @@ class SocketIOCocoaTests: XCTestCase {
             
             private func socketOnOpen(socket: SocketIOSocket) {
                 NSLog("Socket on open")
+                self.expectation?.fulfill()
+                self.expectation = nil
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
