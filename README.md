@@ -26,6 +26,36 @@ All swift files under SocketIOCocoa
 Usage
 =============
 
+Swift
+---------
+
+Create a client
+
+    var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+    client.open()
+    
+    
+Create a socket
+    
+    var socket = client.socket("namespace")
+    // Set a delegate on socket
+    
+The SocketIOSocketDelegate
+
+    @objc public protocol SocketIOSocketDelegate {
+        // Called when the socket received a low level packet
+        optional func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket)
+        
+        // Called when the socket received an event
+        func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?)
+        
+        // Called when the socket is open
+        func socketOnOpen(socket: SocketIOSocket)
+        
+        // Called when the socket is on error
+        func socketOnError(socket: SocketIOSocket, error: String, description: String?)
+    }
+
 ObjC
 ---------
 
@@ -39,7 +69,7 @@ Create a socket
     self.apiSocket = [self.client socket:@"namespace"];
     self.apiSocket.delegate = self;
     
-The SocketIOProtocol delegate
+The SocketIOSocketDelegate
 
 Socket received event with data
    
