@@ -75,7 +75,7 @@ class EnginePacketTest: XCTestCase{
     
     func testPollingTransportURI() {
         let transport = PollingTransport(
-            host: "localhost", path: "/socket.io/", port: "8001", secure: false)
+            host: "localhost", path: "/socket.io/", port: "8001", secure: false, query: ["test": "hello"])
         
         let uri = transport.uri()
         var url = NSURL(string: uri)!
@@ -83,6 +83,7 @@ class EnginePacketTest: XCTestCase{
         XCTAssertEqual(8001, url.port!)
         XCTAssertEqual("/socket.io", url.path!)
         XCTAssertEqual("http", url.scheme!)
+        XCTAssertTrue(url.query?.rangeOfString("test=hello") != nil)
         
         let query : String = url.query!
         let params : [String: String] = query.parametersFromQueryString()

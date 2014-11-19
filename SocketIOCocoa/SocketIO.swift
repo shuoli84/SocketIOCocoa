@@ -381,6 +381,9 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     // Custom http headers
     public var headers: [String: String] = [:]
     
+    // Custom query
+    public var query: [String: AnyObject]
+    
     
     // How many attempts to reconnect. nil for infinite
     var reconnectAttempts: Int
@@ -404,7 +407,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
         return dispatch_queue_create("com.menic.SocketIOClient-queue", DISPATCH_QUEUE_SERIAL)
         }()
     
-    @objc public init(uri: String, transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
+    @objc public init(uri: String, query: [String:AnyObject] = [:], transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
         reconnect: Bool = true, reconnectAttempts: Int = 0, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
         timeout: Int = 30){
             self.uri = uri
@@ -417,6 +420,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
             else{
                 self.port = ""
             }
+            self.query = query
             self.secure = url!.scheme == "wss" || url!.scheme == "https"
             self.transports = transports
             self.upgrade = transports.count > 1
@@ -458,7 +462,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
         
         NSLog("[SocketIOClient] Opening")
         
-        self.engineSocket = EngineSocket(host: self.host, port: self.port, path: self.path, secure: self.secure, transports: self.transports, upgrade: self.upgrade, config: [:])
+        self.engineSocket = EngineSocket(host: self.host, port: self.port, path: self.path, secure: self.secure, query: self.query, transports: self.transports, upgrade: self.upgrade, config: [:])
         
         self.engineSocket!.headers = self.headers
         

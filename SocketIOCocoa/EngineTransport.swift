@@ -96,6 +96,9 @@ public class BaseTransport: Logger, Transport {
     // Headers
     public var headers: [String: String] = [:]
     
+    // Query
+    var query: [String: AnyObject]
+    
     // Flag indicates whether current transport is writable
     public var writable: Bool = false
     
@@ -125,10 +128,11 @@ public class BaseTransport: Logger, Transport {
     }
     
     public init(host: String, path : String, port: String,
-        secure : Bool, query : String = ""){
+        secure : Bool, query : [String: AnyObject] = [:]){
             self.path = path
             self.host = host
             self.port = port
+            self.query = query
             self.secure = secure
     }
     
@@ -375,11 +379,11 @@ public class PollingTransport : BaseTransport{
     // Construct the uri used for request
     public func uri() -> String{
         let schema = self.secure ? "https" : "http"
-        var query : [String: AnyObject] = [
+        var query : [String: AnyObject] = $.merge(dictionaries: self.query, [
             "EIO": self.protocolVersion,
             "transport": self.name,
             "t": Int(NSDate().timeIntervalSince1970)
-        ]
+        ])
         
         if let sid : String = self.sid {
             query["sid"] = sid
@@ -459,11 +463,11 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     
     public func uri() -> String {
         let schema = self.secure ? "wss" : "ws"
-        var query : [String: AnyObject] = [
+        var query : [String: AnyObject] = $.merge(dictionaries: self.query, [
             "EIO": self.protocolVersion,
             "transport": self.name,
             "t": Int(NSDate().timeIntervalSince1970)
-        ]
+        ])
         
         if let sid : String = self.sid {
             query["sid"] = sid

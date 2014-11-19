@@ -102,7 +102,7 @@ class SocketIOCocoaTests: XCTestCase {
     
     func testSocketIOClient(){
         let uri = "http://localhost:8001/socket.io/"
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 3, transports: ["polling"])
+        var client = SocketIOClient(uri: uri, query: ["test": "hello"], reconnect: true, timeout: 3, transports: ["polling"])
         XCTAssert(client.uri == uri)
         
         class ClientDelegate: SocketIOClientDelegate {
