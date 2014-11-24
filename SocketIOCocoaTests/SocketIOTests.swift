@@ -263,11 +263,13 @@ class SocketIOCocoaTests: XCTestCase {
             private func socketOnOpen(socket: SocketIOSocket) {
                 NSLog("Socket on open")
                 self.expectation?.fulfill()
+                self.expectation = nil
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
                 NSLog("Socket on error: \(error)")
                 self.errorexpectation?.fulfill()
+                self.errorexpectation = nil
             }
         }
         
@@ -278,6 +280,7 @@ class SocketIOCocoaTests: XCTestCase {
         // The echo namespace is defined in socketio server
         var expectation = self.expectationWithDescription("Socket open")
         var socket = client.socket("echo")
+        socket.event("test evet", data: ["haha": "hehe"])
         var delegate = SocketIODelegate()
         socket.delegate = delegate
         delegate.expectation = expectation

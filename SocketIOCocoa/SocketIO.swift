@@ -651,7 +651,7 @@ public class SocketIOSocket: NSObject {
     var messageIdCounter: Int = 0
     var acknowledgeCallbacks: [Int: (()->Void)] = [:]
     var receiveBuffer: [SocketIOPacket] = []
-    var sendBuffer: [SocketIOPacket] = []
+    var sendBuffer: [(String, AnyObject?)] = []
     var connected = false
     var autoConnect: Bool
     
@@ -686,19 +686,34 @@ public class SocketIOSocket: NSObject {
         self.packet(.Connect)
     }
     
+    // Called when received connect message from server
+    func onConnected(){
+        self.connected = true
+        self.delegate?.socketOnOpen(self)
+        
+        for (event, data) in self.sendBuffer {
+            self.event(event, data: data)
+        }
+    }
+    
     public func packet(type: SocketIOPacketType, data: AnyObject? = nil){
         let socketPacket = SocketIOPacket(type: type, data: data, nsp: self.namespace)
         self.client.packet(socketPacket)
     }
     
     public func event(event: String, data: AnyObject?){
-        var packetData: NSMutableArray = []
-        packetData.insertObject(event, atIndex: 0)
-        if data != nil {
-            packetData.insertObject(data!, atIndex: 1)
+        if !self.connected {
+            self.sendBuffer.append((event, data))
         }
-        
-        self.packet(.Event, data: packetData)
+        else {
+            var packetData: NSMutableArray = []
+            packetData.insertObject(event, atIndex: 0)
+            if data != nil {
+                packetData.insertObject(data!, atIndex: 1)
+            }
+            
+            self.packet(.Event, data: packetData)
+        }
     }
     
     public func receivePacket(packet: SocketIOPacket){
@@ -706,8 +721,7 @@ public class SocketIOSocket: NSObject {
         
         switch packet.type {
         case .Connect:
-            self.connected = true
-            self.delegate?.socketOnOpen(self)
+            self.onConnected()
         case .Error:
             self.delegate?.socketOnError(self, error: packet.data as String, description: nil)
         case .Event, .BinaryEvent:
