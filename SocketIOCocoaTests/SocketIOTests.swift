@@ -51,14 +51,14 @@ class SocketIOCocoaTests: XCTestCase {
     func testSocketIOPacket(){
         var socketPacket = SocketIOPacket(type: .Event, data: [
             "what": "the"
-            ] as NSDictionary, id: "1231242", nsp: "chat")
+            ] as NSDictionary, id: 0, nsp: "chat")
         var encodedString = socketPacket.encodeAsString()
-        XCTAssert(Converter.bytearrayToNSString(encodedString) == "2/chat,1231242{\"what\":\"the\"}")
+        XCTAssert(Converter.bytearrayToNSString(encodedString) == "2/chat,0{\"what\":\"the\"}")
         
         var decodedPacket = SocketIOPacket(decodedFromString: encodedString)
         
         XCTAssert(decodedPacket.type == .Event)
-        XCTAssert(decodedPacket.id == "1231242")
+        XCTAssert(decodedPacket.id == 0)
         XCTAssert(decodedPacket.nsp == "/chat")
         let data = decodedPacket.data as NSDictionary
         XCTAssert(data.objectForKey("what") as NSString == "the")
@@ -67,7 +67,7 @@ class SocketIOCocoaTests: XCTestCase {
             "what": "the",
             "data": Converter.nsstringToNSData("hell"),
             "array": [1,2, Converter.nsstringToNSData("great")]
-            ] as NSDictionary, id: "1231242", nsp: "chat")
+            ] as NSDictionary, id: 0, nsp: "chat")
         
         let (encoded, buffers) = socketPacket.encode()
         XCTAssert(2 == buffers.count)
@@ -94,10 +94,10 @@ class SocketIOCocoaTests: XCTestCase {
             XCTAssert(false, "packet not reconstructed")
         }
         
-        socketPacket = SocketIOPacket(type: .Event, data: ["message", "Hello world"] as NSArray, id: "1231242", nsp: "chat")
+        socketPacket = SocketIOPacket(type: .Event, data: ["message", "Hello world"] as NSArray, id: 12312, nsp: "chat")
         let (encoded2, _) = socketPacket.encode()
         let encodedStr = Converter.bytearrayToNSString(encoded2)
-        XCTAssert("2/chat,1231242[\"message\",\"Hello world\"]" == encodedStr)
+        XCTAssert("2/chat,12312[\"message\",\"Hello world\"]" == encodedStr)
     }
     
     func testSocketIOClient(){
@@ -327,6 +327,45 @@ class SocketIOCocoaTests: XCTestCase {
         socket.delegate = delegate
         delegate.expectation = expectation
         socket.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+    }
+    
+    func testSocketIOSocketAck(){
+        class SocketIODelegate: SocketIOSocketDelegate {
+            init(){}
+            
+            private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
+                NSLog("Socket on Event \(event), data \(data)")
+            }
+            
+            private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {
+                NSLog("Socket on Packet \(packet)")
+            }
+            
+            private func socketOnOpen(socket: SocketIOSocket) {
+                NSLog("Socket on open")
+            }
+            
+            private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
+                NSLog("Socket on error: \(error)")
+            }
+        }
+        
+        let uri = "http://localhost:8001/socket.io/"
+        // Open socket and client together
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        client.headers = ["Test-Header": "Hello"]
+        
+        // The echo namespace is defined in socketio server
+        var expectation = self.expectationWithDescription("Socket open")
+        var socket = client.socket("echo")
+        var delegate = SocketIODelegate()
+        socket.delegate = delegate
+        socket.open()
+        
+        socket.event("message", data: [1,2,3]) { (packet) -> Void in
+            expectation.fulfill()
+        }
         self.waitForExpectationsWithTimeout(30, handler: nil)
     }
 }

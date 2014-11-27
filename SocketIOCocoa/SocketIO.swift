@@ -179,10 +179,10 @@ public class BinaryParser {
     public var type: SocketIOPacketType
     public var data: AnyObject?
     public var nsp: String?
-    public var id: String?
+    public var id: Int?
     public var attachments: Int
     
-    public init(type: SocketIOPacketType, data: AnyObject? = nil, nsp: String? = nil, id: String? = nil, attachments: Int = 0){
+    public init(type: SocketIOPacketType, data: AnyObject? = nil, nsp: String? = nil, id: Int? = nil, attachments: Int = 0){
         self.type = type
         self.data = data
         self.nsp = nsp
@@ -194,7 +194,7 @@ public class BinaryParser {
         var packetType = SocketIOPacketType(rawValue: string[0] - ASCII._0.rawValue)
         var attachment: Int = 0
         var nsp: String? = nil
-        var id: String? = nil
+        var id: Int? = nil
         var data: AnyObject? = nil
         
         var offset = 1 // 1 byte for type
@@ -240,7 +240,7 @@ public class BinaryParser {
                 idBuffer.append(string[offset++])
             }
             
-            id = Converter.bytearrayToNSString(idBuffer)
+            id = Converter.bytearrayToNSString(idBuffer).integerValue
         }
         
         // Parse the body
@@ -280,7 +280,7 @@ public class BinaryParser {
         
         // Followed by id
         if let id = self.id {
-            encodeBuf += Converter.nsstringToByteArray(id)
+            encodeBuf += Converter.nsstringToByteArray("\(id)")
         }
         
         if let data: AnyObject = self.data {
@@ -651,13 +651,17 @@ public class SocketIOSocket: NSObject {
     var messageIdCounter: Int = 0
     var acknowledgeCallbacks: [Int: (()->Void)] = [:]
     var receiveBuffer: [SocketIOPacket] = []
-    var sendBuffer: [(String, AnyObject?)] = []
+    var sendBuffer: [(String, AnyObject?, ((packet: SocketIOPacket)->Void)?)] = []
     var connected = false
     var autoConnect: Bool
+    var ids: Int
+    var acks:[Int: ((packet: SocketIOPacket)->Void)]
     
     public var delegate: SocketIOSocketDelegate?
     
     public init(client: SocketIOClient, namespace: String, autoConnect: Bool = false){
+        self.ids = 0
+        self.acks = [:]
         self.client = client
         self.namespace = startsWith(namespace, "/") ? namespace : "/\(namespace)"
         self.autoConnect = autoConnect
@@ -691,19 +695,35 @@ public class SocketIOSocket: NSObject {
         self.connected = true
         self.delegate?.socketOnOpen(self)
         
-        for (event, data) in self.sendBuffer {
-            self.event(event, data: data)
+        for (event, data, ack) in self.sendBuffer {
+            self.event(event, data: data, ack: ack)
+        }
+        self.sendBuffer = []
+    }
+    
+    // Called when an ACK packet received
+    func onAck(packet: SocketIOPacket){
+        if let ack = self.acks[packet.id!] {
+            NSLog("[SocketIOSocket][\(self.namespace)][\(self.connected)] on ack for \(packet.id) with data \(packet.data!)")
+            ack(packet: packet)
+            self.acks[packet.id!] = nil
         }
     }
     
-    public func packet(type: SocketIOPacketType, data: AnyObject? = nil){
+    public func packet(type: SocketIOPacketType, data: AnyObject? = nil, ack:((packet: SocketIOPacket)->Void)? = nil){
         let socketPacket = SocketIOPacket(type: type, data: data, nsp: self.namespace)
+        
+        if let ack_callback = ack {
+            socketPacket.id = self.ids++
+            self.acks[socketPacket.id!] = ack_callback
+        }
+        
         self.client.packet(socketPacket)
     }
     
-    public func event(event: String, data: AnyObject?){
+    public func event(event: String, data: AnyObject?, ack: ((packet: SocketIOPacket)->Void)? = nil){
         if !self.connected {
-            self.sendBuffer.append((event, data))
+            self.sendBuffer.append((event, data, ack))
         }
         else {
             var packetData: NSMutableArray = []
@@ -712,7 +732,7 @@ public class SocketIOSocket: NSObject {
                 packetData.insertObject(data!, atIndex: 1)
             }
             
-            self.packet(.Event, data: packetData)
+            self.packet(.Event, data: packetData, ack: ack)
         }
     }
     
@@ -742,8 +762,8 @@ public class SocketIOSocket: NSObject {
                 }
             }
         case .Ack, .BinaryAck:
-            break
-        default:
+            self.onAck(packet)
+        case .Disconnect:
             break
         }
     }
