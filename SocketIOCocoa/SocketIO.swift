@@ -732,6 +732,7 @@ public class SocketIOSocket: NSObject {
                 packetData.insertObject(data!, atIndex: 1)
             }
             
+            // TODO Fix, detect the binary and set the event type
             self.packet(.Event, data: packetData, ack: ack)
         }
     }
@@ -749,11 +750,18 @@ public class SocketIOSocket: NSObject {
                 if let dataArray = data as? NSArray {
                     if dataArray.count > 0 {
                         let event: NSString = dataArray[0] as NSString
-                        if dataArray.count > 1{
+                        if dataArray.count > 1 {
                             self.delegate?.socketOnEvent(self, event: event, data: dataArray[1])
                         }
                         else{
                             self.delegate?.socketOnEvent(self, event: event, data: nil)
+                        }
+                        
+                        if let id = packet.id {
+                            NSLog("[SocketIOSocket] sending ACK back to server")
+                            var packetType: SocketIOPacketType = packet.type == .Event ? .Ack : .BinaryAck
+                            let ackPacket = SocketIOPacket(type: packetType, data: data, nsp: self.namespace, id: id)
+                            self.client.packet(ackPacket)
                         }
                     }
                 }
