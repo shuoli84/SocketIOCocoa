@@ -105,8 +105,6 @@ Alamofire for xhr polling, starscream for websocket. GCD for async tasks.
 TODO
 =============
 
-Test and fix ACK
-
 Performance enhaucement
 
 LICENSE
