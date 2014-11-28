@@ -366,6 +366,14 @@ class SocketIOCocoaTests: XCTestCase {
         socket.event("message", data: [1,2,3]) { (packet) -> Void in
             expectation.fulfill()
         }
-        self.waitForExpectationsWithTimeout(30, handler: nil)
+        self.waitForExpectationsWithTimeout(300, handler: nil)
+        
+        expectation = self.expectationWithDescription("Binary message")
+         socket.event("message", data: ["what": Converter.nsstringToNSData("hell")]) { (packet) -> Void in
+            expectation.fulfill()
+        }
+        self.waitForExpectationsWithTimeout(300, handler: nil)
+        
+        
     }
 }

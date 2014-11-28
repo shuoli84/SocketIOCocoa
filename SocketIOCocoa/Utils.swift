@@ -101,3 +101,36 @@ public class Logger: LoggerProtocol {
         NSLog("[I]\(self.logPrefix()) \(message)")
     }
 }
+
+public func containsBinary(data: AnyObject)->Bool{
+    var isBinary = false
+    if data is NSDictionary {
+        let dict = data as NSDictionary
+       
+        let keys = dict.allKeys
+        for key in keys {
+            if let strkey = key as? NSString {
+                let value: AnyObject = data.objectForKey(key)!
+                if containsBinary(value) {
+                    isBinary = true
+                }
+            }
+            else{
+                NSLog("Dict has a non string key")
+            }
+        }
+    }
+    else if data is NSArray {
+        var returnArray: [AnyObject] = []
+        for item in data as NSArray{
+            if containsBinary(item) {
+                isBinary = true
+            }
+        }
+    }
+    else if data is NSData {
+        isBinary = true
+    }
+    
+    return isBinary
+}

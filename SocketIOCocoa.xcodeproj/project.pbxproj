@@ -21,6 +21,7 @@
 		9C29C7CD1A0E685E0036EDB3 /* EngineTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */; };
 		9C29C7CF1A0E690B0036EDB3 /* EngineSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */; };
 		9C29C7D11A0E699E0036EDB3 /* SocketIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C29C7D01A0E699E0036EDB3 /* SocketIO.swift */; };
+		9C612F821A2812AA00C84EE7 /* UtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C612F811A2812AA00C84EE7 /* UtilsTests.swift */; };
 		9CC4DE761A0E102A00BD6DD9 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +52,7 @@
 		9C29C7CC1A0E685E0036EDB3 /* EngineTransport.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineTransport.swift; sourceTree = "<group>"; };
 		9C29C7CE1A0E690B0036EDB3 /* EngineSocket.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineSocket.swift; sourceTree = "<group>"; };
 		9C29C7D01A0E699E0036EDB3 /* SocketIO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SocketIO.swift; sourceTree = "<group>"; };
+		9C612F811A2812AA00C84EE7 /* UtilsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UtilsTests.swift; sourceTree = "<group>"; };
 		9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
 		C683D0750A5BED5403E25D41 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		CD168E7B21F68EBF458D587D /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
@@ -132,6 +134,7 @@
 		9C299CDF1A048AF70002F47E /* SocketIOCocoaTests */ = {
 			isa = PBXGroup;
 			children = (
+				9C612F811A2812AA00C84EE7 /* UtilsTests.swift */,
 				9CC4DE751A0E102A00BD6DD9 /* EngineTests.swift */,
 				9C299CE21A048AF70002F47E /* SocketIOTests.swift */,
 				9C299CE01A048AF70002F47E /* Supporting Files */,
@@ -328,6 +331,7 @@
 			files = (
 				9C299CE31A048AF70002F47E /* SocketIOTests.swift in Sources */,
 				9CC4DE761A0E102A00BD6DD9 /* EngineTests.swift in Sources */,
+				9C612F821A2812AA00C84EE7 /* UtilsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

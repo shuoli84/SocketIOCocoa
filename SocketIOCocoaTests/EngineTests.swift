@@ -284,8 +284,6 @@ class EnginePacketTest: XCTestCase{
         XCTAssert(socket.transport?.name == "websocket")
     }
     
-    // Root cause is the transport created just be released. No strong reference to it. We need to find a place
-    // To hold it. :(
     func testEngineSocketPing(){
         var socket = EngineSocket(host: "localhost", port: "8001", path: "/socket.io/", secure: false, transports: ["polling", "websocket"], upgrade: true, config: [:])
         

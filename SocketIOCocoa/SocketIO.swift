@@ -732,8 +732,7 @@ public class SocketIOSocket: NSObject {
                 packetData.insertObject(data!, atIndex: 1)
             }
             
-            // TODO Fix, detect the binary and set the event type
-            self.packet(.Event, data: packetData, ack: ack)
+            self.packet(containsBinary(packetData) ? .BinaryEvent : .Event, data: packetData, ack: ack)
         }
     }
     
