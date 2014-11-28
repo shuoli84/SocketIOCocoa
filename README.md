@@ -63,6 +63,14 @@ The SocketIOSocketDelegate
 }
 ```
 
+Send message to server, when a callback provides, it will require an ACK or BinaryACK from server, then the callback will be called.
+```Swift
+socket.event("message", data: [1,2,3]) { (packet) -> Void in
+    expectation.fulfill()
+}
+self.waitForExpectationsWithTimeout(300, handler: nil)
+```
+
 ObjC
 ---------
 
