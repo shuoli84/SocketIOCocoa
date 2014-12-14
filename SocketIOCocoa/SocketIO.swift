@@ -444,7 +444,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     }
     
     public func sendAll(event: String, data: AnyObject?){
-        
+        // Not implemented yet.
     }
     
     func maybeReconnectOnOpen(){
@@ -512,6 +512,12 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
                 self.open()
             }
         }
+    }
+    
+    public func close(){
+        self.autoConnect = false
+        self.readyState = .Closed
+        self.engineSocket?.close()
     }
     
     // TODO Check whether we need to add the callback

@@ -108,6 +108,7 @@ class SocketIOCocoaTests: XCTestCase {
         class ClientDelegate: SocketIOClientDelegate {
             var expectation: XCTestExpectation?
             var reconnectExpectation: XCTestExpectation?
+            var closeExpectation: XCTestExpectation?
             
             init(expectation: XCTestExpectation){
                 self.expectation = expectation
@@ -115,6 +116,7 @@ class SocketIOCocoaTests: XCTestCase {
             
             private func clientOnClose(client: SocketIOClient) {
                 NSLog("Client on Close")
+                self.closeExpectation?.fulfill()
             }
             
             private func clientOnConnectionTimeout(client: SocketIOClient) {
@@ -154,6 +156,11 @@ class SocketIOCocoaTests: XCTestCase {
         
         expectation = self.expectationWithDescription("Wait for reconnect")
         delegate.reconnectExpectation = expectation
+        self.waitForExpectationsWithTimeout(10, handler: nil)
+        
+        expectation = self.expectationWithDescription("Wait for close")
+        delegate.closeExpectation = expectation
+        client.close()
         self.waitForExpectationsWithTimeout(10, handler: nil)
     }
     
@@ -369,11 +376,9 @@ class SocketIOCocoaTests: XCTestCase {
         self.waitForExpectationsWithTimeout(300, handler: nil)
         
         expectation = self.expectationWithDescription("Binary message")
-         socket.event("message", data: ["what": Converter.nsstringToNSData("hell")]) { (packet) -> Void in
+        socket.event("message", data: ["what": Converter.nsstringToNSData("hell")]) { (packet) -> Void in
             expectation.fulfill()
         }
         self.waitForExpectationsWithTimeout(300, handler: nil)
-        
-        
     }
 }

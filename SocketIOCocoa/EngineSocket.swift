@@ -166,7 +166,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     public func close(){
-        // Trigger the close the underlying transport
+        // close the underlying transport
         
         if self.readyState != .Closed || self.readyState != .Closing {
             dispatch_async(self.queue){
