@@ -123,6 +123,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
             self.transports = transports
             self.query = query
             self.upgrade = upgrade
+            self.secure = secure
     }
     
     func createTransport(transportName: String) -> Transport? {
