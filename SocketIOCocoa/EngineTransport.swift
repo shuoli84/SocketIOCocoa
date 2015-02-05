@@ -285,9 +285,7 @@ public class PollingTransport : BaseTransport{
             }
             
             if let delegate = self.delegate {
-                for packet in EngineParser.decodePayload(data){
-                    delegate.transportOnPacket(self, packet: packet)
-                }
+                delegate.transportOnPacket(self, packet: packet)
             }
             else{
                 debug("Delegate not set, ignore packet \(packet)")
@@ -446,6 +444,8 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
     override public func write(packets: [EnginePacket]){
         dispatch_async(self.dispatchQueue()){
             if self.readyState == .Closed || self.readyState == .Closing {
+                // TODO Check whether we should report back which message not streamed
+                self.debug("Transport already closed, your packets wont got pushed")
                 return
             }
             
@@ -455,7 +455,8 @@ public class WebsocketTransport : BaseTransport, WebsocketDelegate{
                 }
                 else {
                     // TODO Check whether we should avoid the extra data->string encode and stream it out
-                    self.websocket?.writeString(Converter.nsdataToNSString(packet.encode()))
+                    let stringMessage = Converter.nsdataToNSString(packet.encode())
+                    self.websocket?.writeString(stringMessage)
                 }
             }
         }

@@ -193,6 +193,7 @@ class SocketIOCocoaTests: XCTestCase {
             private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {
                 NSLog("Client got data")
                 self.expectation?.fulfill()
+                self.expectation = nil
             }
             private func clientReconnectionError(client: SocketIOClient, error: String, description: String?) {
                 NSLog("Client reconnection Error \(error) \(description)")
@@ -229,12 +230,12 @@ class SocketIOCocoaTests: XCTestCase {
             
             private func socketOnOpen(socket: SocketIOSocket) {
                 NSLog("Socket on open")
-                self.expectation?.fulfill()
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
                 NSLog("Socket on error: \(error)")
                 self.errorexpectation?.fulfill()
+                self.errorexpectation = nil
             }
         }
         
@@ -255,7 +256,6 @@ class SocketIOCocoaTests: XCTestCase {
     func testSocketIOSocketConnect(){
         class SocketIODelegate: SocketIOSocketDelegate {
             var expectation: XCTestExpectation?
-            var errorexpectation: XCTestExpectation?
             
             init(){}
             
@@ -274,9 +274,7 @@ class SocketIOCocoaTests: XCTestCase {
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
-                NSLog("Socket on error: \(error)")
-                self.errorexpectation?.fulfill()
-                self.errorexpectation = nil
+                NSLog("Socket on error")
             }
         }
         
@@ -314,7 +312,6 @@ class SocketIOCocoaTests: XCTestCase {
             private func socketOnOpen(socket: SocketIOSocket) {
                 NSLog("Socket on open")
                 self.expectation?.fulfill()
-                self.expectation = nil
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
@@ -360,7 +357,7 @@ class SocketIOCocoaTests: XCTestCase {
         
         let uri = "http://localhost:8001/socket.io/"
         // Open socket and client together
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["polling", "websocket"])
         client.headers = ["Test-Header": "Hello"]
         
         // The echo namespace is defined in socketio server

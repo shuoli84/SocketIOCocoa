@@ -686,13 +686,9 @@ public class SocketIOSocket: NSObject {
         }
     }
     
-    // This function will be called by the client
-    public func onOpen(){
-        self.delegate?.socketOnOpen(self)
-    }
-    
     public func connect(){
-        NSLog("[SocketIOSocket][\(self.namespace)][\(self.connected)] connect to namespace")
+        let c = self.connected ? "C" : "U"
+        NSLog("[SocketIOSocket][\(self.namespace)][\(c)] connect to namespace")
         self.packet(.Connect)
     }
     

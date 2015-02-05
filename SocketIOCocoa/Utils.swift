@@ -77,7 +77,7 @@ public class Converter {
 
 // Ascii value enums
 enum ASCII: Byte {
-    case _0 = 48, _1, _2, _3, _4, _5, _6, _7, _8, _9
+    case _0 = 48, _1 = 49, _2 = 50, _3 = 51, _4 = 52, _5 = 53, _6 = 54, _7 = 55, _8 = 56, _9 = 57
     case a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
     case A = 65, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
     case COMMA = 44, DASH = 45, BACKSLASH = 47
