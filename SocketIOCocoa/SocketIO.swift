@@ -518,6 +518,10 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     }
     
     public func close(){
+        for socket in self.connectedSockets {
+            socket.disconnect()
+        }
+        
         self.skipReconnect = true
         self.autoConnect = false
         self.readyState = .Closed
@@ -545,7 +549,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
             return socket
         }
         
-        var socket = SocketIOSocket(client: self, namespace: nsp, autoConnect: self.autoConnect)
+        var socket = SocketIOSocket(client: self, namespace: nsp)
         self.namespaces[nsp] = socket
         
         return socket
@@ -660,22 +664,19 @@ public class SocketIOSocket: NSObject {
     unowned var client: SocketIOClient
     var namespace: String
     var messageIdCounter: Int = 0
-    var acknowledgeCallbacks: [Int: (()->Void)] = [:]
     var receiveBuffer: [SocketIOPacket] = []
     var sendBuffer: [(String, AnyObject?, ((packet: SocketIOPacket)->Void)?)] = []
     var connected = false
-    var autoConnect: Bool
     var ids: Int
     var acks:[Int: ((packet: SocketIOPacket)->Void)]
     
     public var delegate: SocketIOSocketDelegate?
     
-    public init(client: SocketIOClient, namespace: String, autoConnect: Bool = false){
+    public init(client: SocketIOClient, namespace: String){
         self.ids = 0
         self.acks = [:]
         self.client = client
         self.namespace = startsWith(namespace, "/") ? namespace : "/\(namespace)"
-        self.autoConnect = autoConnect
     }
     
     public func open(){
@@ -695,6 +696,11 @@ public class SocketIOSocket: NSObject {
         let c = self.connected ? "C" : "U"
         NSLog("[SocketIOSocket][\(self.namespace)][\(c)] connect to namespace")
         self.packet(.Connect)
+    }
+    
+    public func disconnect(){
+        self.packet(.Disconnect)
+        self.connected = false
     }
     
     // Called when received connect message from server

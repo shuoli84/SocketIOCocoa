@@ -173,6 +173,9 @@ public class EngineSocket: Logger, EngineTransportDelegate{
                 if self.readyState != .Closed && self.readyState != .Closing {
                     self.readyState = .Closing
                     self.transport?.close()
+                    for d in self.upgradingTransports {
+                        d.transport.close()
+                    }
                 }
             }
         }
@@ -230,7 +233,7 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     }
     
     public func transportOnError(transport: Transport, error: String, withDescription description: String) {
-        debug("Tranport got error \(error) \(description)")
+        debug("Transport got error \(error) \(description)")
         self.onError(error, reason: description)
     }
     
@@ -253,6 +256,9 @@ public class EngineSocket: Logger, EngineTransportDelegate{
         // If the transport pasued, lets see whether it is in upgrading, if yes, then fire the event to the upgrade delegate to finish
         // The upgrading logic
         debug("Transport [\(transport.name)] Paused")
+        if self.readyState == .Closed || self.readyState == .Closing {
+            return
+        }
         
         for d in self.upgradingTransports {
             if d.prevTransport === transport {
@@ -323,7 +329,6 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     func setPing(){
         if self.readyState == .Closed || self.readyState == .Closing {
-            debug("Skip the ping on closed socket")
             return
         }
         
@@ -514,8 +519,8 @@ class ProbeTransportDelegate: Logger, EngineTransportDelegate {
     
     func onPrevTransportPaused(){
         debug("Prev transport paused")
-        if self.failed || self.engineSocket.readyState == .Closed {
-            debug("The upgrade failed or the socket is closed, skip the upgrading")
+        if self.failed || self.engineSocket.readyState == .Closed || self.engineSocket.readyState == .Closing {
+            debug("The upgrade failed or the socket is closed or closing, skip the upgrading")
             return
         }
         

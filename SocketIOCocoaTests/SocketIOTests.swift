@@ -418,7 +418,7 @@ class SocketIOCocoaTests: XCTestCase {
         
         let uri = "http://localhost:8001/socket.io/"
         // Open socket and client together
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["websocket"])
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["polling", "websocket"])
         var delegate = TestSocketIOClientDelegate()
         client.delegate = delegate
         
@@ -433,6 +433,35 @@ class SocketIOCocoaTests: XCTestCase {
             self.waitForExpectationsWithTimeout(30, handler: nil)
         }
         
-        sleep(10)
+        // Now we should also able to process as a normal client
+        client.delegate = nil
+        client.open()
+        var socket = client.socket("echo")
+        
+        class TestSocketDelegate : SocketIOSocketDelegate {
+            var eventExpectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
+                
+            }
+            private func socketOnEvent(socket: SocketIOSocket, event: String, data: AnyObject?) {
+                NSLog("Got event \(event)")
+                self.eventExpectation?.fulfill()
+                self.eventExpectation = nil
+            }
+            private func socketOnOpen(socket: SocketIOSocket) {
+                
+            }
+            private func socketOnPacket(socket: SocketIOSocket, packet: SocketIOPacket) {
+                
+            }
+        }
+        var socketDelegate = TestSocketDelegate()
+        socketDelegate.eventExpectation = self.expectationWithDescription("For event")
+        socket.delegate = socketDelegate
+        socket.event("message", data: "~~~~~~~~~", ack: nil)
+        self.waitForExpectationsWithTimeout(30, handler: nil)
     }
 }
