@@ -333,7 +333,7 @@ public class SocketIOPacketDecoder {
     }
 }
 
-public protocol SocketIOClientDelegate {
+@objc public protocol SocketIOClientDelegate {
     func clientOnOpen(client: SocketIOClient)
     func clientOnClose(client: SocketIOClient)
     func clientOnConnectionTimeout(client: SocketIOClient)
