@@ -168,10 +168,9 @@ public class EngineSocket: Logger, EngineTransportDelegate{
     
     public func close(){
         // close the underlying transport
-        
-        if self.readyState != .Closed || self.readyState != .Closing {
+        if self.readyState != .Closed && self.readyState != .Closing {
             dispatch_async(self.queue){
-                if self.readyState != .Closed || self.readyState != .Closing {
+                if self.readyState != .Closed && self.readyState != .Closing {
                     self.readyState = .Closing
                     self.transport?.close()
                 }

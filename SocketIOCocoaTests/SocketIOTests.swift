@@ -378,4 +378,57 @@ class SocketIOCocoaTests: XCTestCase {
         }
         self.waitForExpectationsWithTimeout(300, handler: nil)
     }
+    
+    func testSocketIOSocketStartStopStartStop(){
+        class TestSocketIOClientDelegate: SocketIOClientDelegate {
+            var openExpection: XCTestExpectation?
+            var closeExpectation: XCTestExpectation?
+            
+            init(){}
+            
+            private func clientOnClose(client: SocketIOClient) {
+                self.closeExpectation?.fulfill()
+            }
+            
+            private func clientOnOpen(client: SocketIOClient) {
+                self.openExpection?.fulfill()
+            }
+            
+            private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {
+                
+            }
+            
+            private func clientReconnected(client: SocketIOClient) {
+            }
+            
+            private func clientReconnectionError(client: SocketIOClient, error: String, description: String?) {
+            }
+            
+            private func clientReconnectionFailed(client: SocketIOClient) {
+            }
+            
+            private func clientOnConnectionTimeout(client: SocketIOClient) {
+            }
+            
+            private func clientOnError(client: SocketIOClient, error: String, description: String?) {
+            }
+        }
+        
+        let uri = "http://localhost:8001/socket.io/"
+        // Open socket and client together
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["polling", "websocket"])
+        var delegate = TestSocketIOClientDelegate()
+        client.delegate = delegate
+        
+        for i in 0...100 {
+            var openExpectation = self.expectationWithDescription("Client open")
+            delegate.openExpection = openExpectation
+            client.open()
+            self.waitForExpectationsWithTimeout(30, handler: nil)
+            var closeExpectation = self.expectationWithDescription("Client closed")
+            delegate.closeExpectation = closeExpectation
+            client.close()
+            self.waitForExpectationsWithTimeout(30, handler: nil)
+        }
+    }
 }
