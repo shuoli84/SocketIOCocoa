@@ -63,6 +63,10 @@ class EnginePacketTest: XCTestCase{
         XCTAssert(Converter.bytearrayToNSString(decoded_packets[0].data!) == "The first packet", "not matching")
         XCTAssert(Converter.bytearrayToNSString(decoded_packets[1].data!) == "The second packet")
         XCTAssert(Converter.bytearrayToNSString(decoded_packets[2].data!) == "The third packet")
+        
+        // The decode payload should not throw even it accepts malformated data
+        XCTAssert(EngineParser.decodePayload(Converter.nsstringToNSData("<html>")).count == 0)
+        XCTAssert(EngineParser.decodePayload(Converter.nsstringToNSData("")).count == 0)
     }
     
     func testPerformancePayload() {

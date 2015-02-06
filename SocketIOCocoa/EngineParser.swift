@@ -201,6 +201,11 @@ public class EngineParser {
                 packetLength = packetLength * 10 + Int(c)
             }
             
+            if packetLength > byteArray.count - offset {
+                // If the package length exceed maximum, return [] immediatly
+                return []
+            }
+            
             let restBuffer = [Byte](byteArray[offset..<offset+packetLength])
             if isBinary {
                 let encodedPacket = Converter.bytearrayToNSData(restBuffer)
