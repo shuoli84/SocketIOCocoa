@@ -518,6 +518,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     }
     
     public func close(){
+        self.skipReconnect = true
         self.autoConnect = false
         self.readyState = .Closed
         self.engineSocket?.close()
