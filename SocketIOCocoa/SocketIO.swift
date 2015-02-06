@@ -406,6 +406,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
     var dispatchQueue: dispatch_queue_t = {
         return dispatch_queue_create("com.menic.SocketIOClient-queue", DISPATCH_QUEUE_SERIAL)
         }()
+    var dispatchCookie: Int = 0
     
     @objc public init(uri: String, query: [String:AnyObject] = [:], transports: [String] = ["polling", "websocket"], autoConnect: Bool = true,
         reconnect: Bool = true, reconnectAttempts: Int = 0, reconnectDelay: Int = 1, reconnectDelayMax: Int = 5,
@@ -433,18 +434,20 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
             self.decoder = SocketIOPacketDecoder()
     }
     
-    
     func delay(delay:Double, closure:()->()) {
+        let dispatchCookie = self.dispatchCookie
+        var cancellableBlock: dispatch_block_t = {
+            if self.dispatchCookie != dispatchCookie {
+                return
+            }
+            closure()
+        }
         dispatch_after(
             dispatch_time(
                 DISPATCH_TIME_NOW,
                 Int64(delay * Double(NSEC_PER_SEC))
             ),
-            self.dispatchQueue, closure)
-    }
-    
-    public func sendAll(event: String, data: AnyObject?){
-        // Not implemented yet.
+            self.dispatchQueue, cancellableBlock)
     }
     
     func maybeReconnectOnOpen(){
@@ -518,6 +521,7 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
         self.autoConnect = false
         self.readyState = .Closed
         self.engineSocket?.close()
+        self.dispatchCookie++
     }
     
     // TODO Check whether we need to add the callback

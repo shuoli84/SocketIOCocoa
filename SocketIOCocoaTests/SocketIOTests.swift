@@ -382,6 +382,7 @@ class SocketIOCocoaTests: XCTestCase {
     func testSocketIOSocketStartStopStartStop(){
         class TestSocketIOClientDelegate: SocketIOClientDelegate {
             var openExpection: XCTestExpectation?
+            var onPacketExpectation: XCTestExpectation?
             var closeExpectation: XCTestExpectation?
             
             init(){}
@@ -395,7 +396,8 @@ class SocketIOCocoaTests: XCTestCase {
             }
             
             private func clientOnPacket(client: SocketIOClient, packet: SocketIOPacket) {
-                
+                self.onPacketExpectation?.fulfill()
+                self.onPacketExpectation = nil
             }
             
             private func clientReconnected(client: SocketIOClient) {
@@ -416,7 +418,7 @@ class SocketIOCocoaTests: XCTestCase {
         
         let uri = "http://localhost:8001/socket.io/"
         // Open socket and client together
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["polling", "websocket"])
+        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30, transports:["websocket"])
         var delegate = TestSocketIOClientDelegate()
         client.delegate = delegate
         
@@ -430,5 +432,7 @@ class SocketIOCocoaTests: XCTestCase {
             client.close()
             self.waitForExpectationsWithTimeout(30, handler: nil)
         }
+        
+        sleep(10)
     }
 }
