@@ -525,8 +525,10 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
         self.skipReconnect = true
         self.autoConnect = false
         self.readyState = .Closed
+        self.engineSocket?.delegate = nil
         self.engineSocket?.close()
         self.dispatchCookie++
+        self.delegate?.clientOnClose(self)
     }
     
     // TODO Check whether we need to add the callback
