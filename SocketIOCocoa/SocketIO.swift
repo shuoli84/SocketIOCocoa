@@ -608,14 +608,14 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
         if socketIOPacket != nil {
             self.delegate?.clientOnPacket(self, packet: socketIOPacket!)
             
-            if let namespace = socketIOPacket?.nsp {
-                if self.namespaces[namespace] != nil{
-                    var socket = self.socket(namespace)
-                    socket.receivePacket(socketIOPacket!)
-                }
-                else{
-                    NSLog("[SocketIOClient][\(self.readyState.description)] Unknown namespace \(namespace)")
-                }
+            let namespace: String! = (socketIOPacket?.nsp != nil) ? socketIOPacket?.nsp : "/"
+            
+            if self.namespaces[namespace] != nil{
+                var socket = self.socket(namespace)
+                socket.receivePacket(socketIOPacket!)
+            }
+            else{
+                NSLog("[SocketIOClient][\(self.readyState.description)] Unknown namespace \(namespace)")
             }
         }
     }

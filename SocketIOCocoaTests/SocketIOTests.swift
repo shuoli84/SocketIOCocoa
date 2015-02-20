@@ -282,6 +282,15 @@ class SocketIOCocoaTests: XCTestCase {
         // Open socket and client together
         var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
         
+        // Connect the socket to root namespace
+        var expectation_for_root_nsp = self.expectationWithDescription("root nsp open")
+        var root_nsp_socket = client.socket("/")
+        var root_delegate = SocketIODelegate()
+        root_nsp_socket.delegate = root_delegate
+        root_delegate.expectation = expectation_for_root_nsp
+        root_nsp_socket.open()
+        self.waitForExpectationsWithTimeout(30, handler: nil)
+        
         // The echo namespace is defined in socketio server
         var expectation = self.expectationWithDescription("Socket open")
         var socket = client.socket("echo")
