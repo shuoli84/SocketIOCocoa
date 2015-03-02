@@ -270,7 +270,6 @@ class SocketIOCocoaTests: XCTestCase {
             private func socketOnOpen(socket: SocketIOSocket) {
                 NSLog("Socket on open")
                 self.expectation?.fulfill()
-                self.expectation = nil
             }
             
             private func socketOnError(socket: SocketIOSocket, error: String, description: String?) {
@@ -280,7 +279,7 @@ class SocketIOCocoaTests: XCTestCase {
         
         let uri = "http://localhost:8001/socket.io/"
         // Open socket and client together
-        var client = SocketIOClient(uri: uri, reconnect: true, timeout: 30)
+        var client = SocketIOClient(uri: uri, transports:["websocket"], reconnect: true, timeout: 30)
         
         // Connect the socket to root namespace
         var expectation_for_root_nsp = self.expectationWithDescription("root nsp open")
@@ -289,10 +288,21 @@ class SocketIOCocoaTests: XCTestCase {
         root_nsp_socket.delegate = root_delegate
         root_delegate.expectation = expectation_for_root_nsp
         root_nsp_socket.open()
-        self.waitForExpectationsWithTimeout(30, handler: nil)
+        self.waitForExpectationsWithTimeout(300, handler: nil)
+        
+        var expectation = self.expectationWithDescription("wait")
+        var queue = dispatch_queue_create("com.menic.EngineIO-queue", DISPATCH_QUEUE_SERIAL)
+        // Wait till the connect message back from server
+        dispatch_async(queue){
+            sleep(2)
+            expectation.fulfill()
+        }
+        self.waitForExpectationsWithTimeout(300, handler: nil)
+        
+        root_nsp_socket.delegate = nil
         
         // The echo namespace is defined in socketio server
-        var expectation = self.expectationWithDescription("Socket open")
+        expectation = self.expectationWithDescription("Socket open")
         var socket = client.socket("echo")
         socket.event("test evet", data: ["haha": "hehe"])
         var delegate = SocketIODelegate()

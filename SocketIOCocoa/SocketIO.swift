@@ -486,6 +486,9 @@ public class SocketIOClient: NSObject, EngineSocketDelegate {
                 }
             }
         }
+        
+        // Make sure we have a root namespace
+        self.socket("/")
     }
     
     func reconnect(){
@@ -695,9 +698,11 @@ public class SocketIOSocket: NSObject {
     }
     
     public func connect(){
-        let c = self.connected ? "C" : "U"
-        NSLog("[SocketIOSocket][\(self.namespace)][\(c)] connect to namespace")
-        self.packet(.Connect)
+        if self.namespace != "/" {
+            let c = self.connected ? "C" : "U"
+            NSLog("[SocketIOSocket][\(self.namespace)][\(c)] connect to namespace")
+            self.packet(.Connect)
+        }
     }
     
     public func disconnect(){
